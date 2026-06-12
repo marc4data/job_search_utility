@@ -30,6 +30,50 @@ Two skills:
    the term list was too soft. The keyword-checklist used during drafting is
    QA only and is never written to the tracker.
 
+## Process flow
+
+Two phases: a **one-time setup** that builds your reusable assets, then a
+**per-job loop** you run for every opportunity. The two invariants are baked into
+the flow — `verified_skills.md` gates every claim, and the tracker's *Resume
+Score* is written **only** by the ATS script (the content-QA score never is).
+
+```text
+ONE-TIME SETUP — say "set up my job search"
+─────────────────────────────────────────────
+   Interview / upload résumé
+      ├──► profile.py            ·  identity & contact
+      ├──► bases.py              ·  LEADER + HANDSON base résumés
+      ├──► verified_skills.md    ·  source of truth (gates every claim)
+      └──► job_tracker.xlsx      ·  your pipeline
+
+PER-JOB LOOP — say "process job opportunities"
+─────────────────────────────────────────────
+   1. Paste job link into job_tracker.xlsx
+   2. Research the company's specific situation
+   3. Pick base:   LEADER  ◄──►  HANDSON
+   4. Draft in order:  CL Para 1 → résumé summary → CL Para 2 & 3
+         └─ every claim must trace to verified_skills.md   (TRUTHFULNESS)
+   5. Recruiter Review checklist (10 points)
+   6. build_batch_<date>.py  →  engine/build_docs.py
+                    │
+                    ▼
+          résumé + cover letter (.docx)
+                    │
+          ┌─────────┴──────────┐
+          ▼                     ▼
+  critique_and_refine()    ats_score_<date>.py
+  3-pass content QA        True ATS Score — jd_full: 25–40 weighted
+          │                terms read from the finished .docx
+          ╳                     │
+   QA ONLY:                     ▼   writes the "Resume Score" column
+   never written          job_tracker.xlsx   (SCORING INTEGRITY)
+```
+
+**Reading the diagram:** the right-hand path (`ats_score` → `job_tracker.xlsx`)
+is the *only* thing that writes the *Resume Score*. The `critique_and_refine`
+branch ends in `╳` — its checklist score is a drafting aid and is deliberately a
+dead end. And everything you claim must trace back to `verified_skills.md`.
+
 ## Quick start
 
 1. Install the plugin.
