@@ -98,19 +98,27 @@ ROLES = [
     },
 ]
 
-results = []
-for r in ROLES:
-    txt = get_resume_text(OUT + r["resume"])
-    score, found, missed = ats_score(txt, r["jd_full"])
-    print(f"\nRow {r['row']} | {r['company']} — {r['role']}")
-    print(f"  Score:  {score}/100  ({len(found)}/{len(found)+len(missed)} terms)")
-    print(f"  Found:  {', '.join(found)}")
-    print(f"  Missed: {', '.join(missed)}")
-    write_tracker(r["row"], score)
-    results.append((r["row"], r["company"], score))
+def main():
+    results = []
+    for r in ROLES:
+        txt = get_resume_text(OUT + r["resume"])
+        score, found, missed = ats_score(txt, r["jd_full"])
+        print(f"\nRow {r['row']} | {r['company']} — {r['role']}")
+        print(f"  Score:  {score}/100  ({len(found)}/{len(found)+len(missed)} terms)")
+        print(f"  Found:  {', '.join(found)}")
+        print(f"  Missed: {', '.join(missed)}")
+        write_tracker(r["row"], score)
+        results.append((r["row"], r["company"], score))
 
-print("\n" + "=" * 60)
-print("True ATS Scores written to tracker:")
-for row, company, score in sorted(results, key=lambda x: -x[2]):
-    print(f"  Row {row}  {company:<16}  {score}/100")
-print("=" * 60)
+    print("\n" + "=" * 60)
+    print("True ATS Scores written to tracker:")
+    for row, company, score in sorted(results, key=lambda x: -x[2]):
+        print(f"  Row {row}  {company:<16}  {score}/100")
+    print("=" * 60)
+
+
+# Run only when executed as a script (e.g. python3 scripts/ats_score_<date>.py).
+# Guarding this lets the regression tests import write_tracker()/ats_score()
+# without triggering a real scoring run.
+if __name__ == "__main__":
+    main()
