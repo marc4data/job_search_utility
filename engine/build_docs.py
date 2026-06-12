@@ -11,11 +11,22 @@ Generated for the `job-search-tailor` plugin. Two important invariants:
     by the separate ats_score script.
   • Never claim a skill/tool that is not in profile/verified_skills.md.
 """
-from docx import Document
-from docx.shared import Pt, Inches, RGBColor, Twips
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.oxml.ns import qn
-from docx.oxml import OxmlElement
+try:
+    from docx import Document
+    from docx.shared import Pt, Inches, RGBColor, Twips
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
+except ImportError as e:
+    import sys
+    sys.exit(
+        f"\n[job-search-tailor] Missing dependency: {e.name}\n"
+        "The engine needs python-docx (and openpyxl for scoring).\n"
+        "Install them into the SAME Python you run scripts with:\n\n"
+        "    python3 -m pip install -r requirements.txt\n\n"
+        "Use 'python3 -m pip' (not bare 'pip') so the installer and the\n"
+        "interpreter that runs this engine are the same one.\n"
+    )
 from datetime import date
 import os
 
