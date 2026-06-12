@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# build.sh — package job-search-tailor into a distributable .plugin (zip).
+#
+# Produces "<name>.plugin" containing only the runtime payload (no dev/test
+# files, no git metadata, no personal data), with files at the archive root so
+# it unpacks straight into a plugin folder. Backlog #13.
+#
+# Usage:  ./build.sh
+set -euo pipefail
+cd "$(dirname "$0")"
+
+NAME=$(python3 -c "import json;print(json.load(open('.claude-plugin/plugin.json'))['name'])")
+VERSION=$(python3 -c "import json;print(json.load(open('.claude-plugin/plugin.json'))['version'])")
+OUT="${NAME}.plugin"
+
+# Safety: never package real (non-example) personal profile files.
+for personal in profile/profile.py profile/bases.py profile/verified_skills.md; do
+  if git ls-files --error-unmatch "$personal" >/dev/null 2>&1; then
+    echo "ERROR: $personal is tracked — refusing to build (would leak personal data)." >&2
+    exit 1
+  fi
+done
+
+# Export tracked runtime files at HEAD. git archive => files at zip root and
+# never includes untracked/gitignored junk or the .git dir. We list runtime
+# paths explicitly, which naturally omits tests/, pytest.ini, BACKLOG.md, etc.
+rm -f "$OUT"
+git archive --format=zip -o "$OUT" HEAD \
+  .claude-plugin \
+  README.md \
+  LICENSE \
+  requirements.txt \
+  engine \
+  profile \
+  references \
+  skills \
+  templates
+
+# Validate the package contains the files the plugin needs to run.
+# Capture the listing once (piping `unzip | grep -q` would SIGPIPE unzip and,
+# under `set -o pipefail`, falsely report a failure).
+CONTENTS=$(unzip -l "$OUT")
+REQUIRED=(
+  ".claude-plugin/plugin.json"
+  "skills/setup-profile/SKILL.md"
+  "skills/process-opportunities/SKILL.md"
+  "engine/build_docs.py"
+  "templates/ats_score_template.py"
+  "templates/build_batch_template.py"
+)
+for f in "${REQUIRED[@]}"; do
+  if ! grep -q " ${f}$" <<<"$CONTENTS"; then
+    echo "ERROR: package is missing required file: $f" >&2
+    exit 1
+  fi
+done
+
+echo "Built $OUT  (v$VERSION)"
+echo "--- contents ---"
+echo "$CONTENTS"
+echo "Structure OK — $OUT is ready to load into Cowork."
