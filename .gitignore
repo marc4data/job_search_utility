@@ -10,6 +10,7 @@ job_tracker.xlsx
 __pycache__/
 *.pyc
 .venv/
+.pytest_cache/
 # local Claude Code settings (machine-specific)
 .claude/settings.local.json
 # os
