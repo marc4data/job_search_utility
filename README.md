@@ -30,6 +30,52 @@ Two skills:
    the term list was too soft. The keyword-checklist used during drafting is
    QA only and is never written to the tracker.
 
+## Process flow
+
+Two phases: a **one-time setup** that builds your reusable assets, then a
+**per-job loop** you run for every opportunity. The two invariants are baked into
+the flow — `verified_skills.md` gates every claim, and the tracker's *Resume
+Score* is written **only** by the ATS script (the content-QA score never is).
+
+```mermaid
+flowchart TD
+    subgraph SETUP["🛠 One-time setup · say &quot;set up my job search&quot;"]
+        direction TB
+        IV["Interview / upload résumé"] --> PR["profile.py<br/>identity &amp; contact"]
+        IV --> BA["bases.py<br/>LEADER + HANDSON base résumés"]
+        IV --> VS["verified_skills.md<br/>source of truth for claims"]
+        IV --> TK[("job_tracker.xlsx")]
+    end
+
+    subgraph LOOP["🔁 Per job · say &quot;process job opportunities&quot;"]
+        direction TB
+        L1["Paste job link into tracker"] --> L2["Research the company's<br/>specific situation"]
+        L2 --> L3{"LEADER or<br/>HANDSON?"}
+        L3 --> L4["Draft in order:<br/>CL Para 1 → résumé summary → CL Para 2 &amp; 3"]
+        L4 --> L5["Recruiter Review checklist<br/>(10 points)"]
+        L5 --> BUILD[["build_batch_&lt;date&gt;.py<br/>→ engine/build_docs.py"]]
+        BUILD --> DOCS[/"résumé + cover letter .docx"/]
+        DOCS --> QA["critique_and_refine()<br/>3-pass content QA<br/>— QA only, never written —"]
+        DOCS --> ATS[["ats_score_&lt;date&gt;.py<br/>True ATS Score<br/>jd_full · 25–40 weighted terms<br/>read from the finished .docx"]]
+    end
+
+    TK ==> L1
+    VS -. "gates every claim<br/>(truthfulness)" .-> L4
+    BA --> BUILD
+    PR --> BUILD
+    ATS ==>|"writes Resume Score"| TK
+
+    classDef authoritative fill:#1f3864,stroke:#1f3864,color:#fff;
+    classDef qaonly fill:#f2f2f2,stroke:#9aa0a6,color:#202124,stroke-dasharray:4 3;
+    class ATS,TK authoritative;
+    class QA qaonly;
+```
+
+**Reading the diagram:** the dark path (`ats_score` → `job_tracker.xlsx`) is the
+only thing that writes the *Resume Score*. The dashed `critique_and_refine` box is
+a drafting aid whose checklist score is deliberately a dead end. Everything you
+claim must trace back to `verified_skills.md`.
+
 ## Quick start
 
 1. Install the plugin.
