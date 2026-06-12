@@ -1,0 +1,8 @@
+# Runtime dependencies for the job-search-tailor engine.
+# Install into the SAME interpreter you run scripts with:
+#     python3 -m pip install -r requirements.txt
+# (Use "python3 -m pip", not bare "pip", so the installer and the
+#  interpreter that runs the engine are guaranteed to match.)
+
+python-docx>=1.1.0   # build/read .docx resumes and cover letters
+openpyxl>=3.1.0      # read/write the .xlsx job tracker

@@ -14,7 +14,19 @@ pull the score down to where it honestly belongs. A strong fit lands high-80s/
 90s; a partial fit lands 70s. A flat 100 means your term list was too soft.
 """
 import os, re, importlib.util
-import openpyxl
+try:
+    import openpyxl
+    from docx import Document  # imported lazily in get_resume_text; checked here for a clear early error
+except ImportError as e:
+    import sys
+    sys.exit(
+        f"\n[job-search-tailor] Missing dependency: {e.name}\n"
+        "The scorer needs openpyxl (tracker) and python-docx (read resumes).\n"
+        "Install them into the SAME Python you run scripts with:\n\n"
+        "    python3 -m pip install -r requirements.txt\n\n"
+        "Use 'python3 -m pip' (not bare 'pip') so the installer and the\n"
+        "interpreter that runs this script are the same one.\n"
+    )
 
 HOME    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT     = HOME + "/"
