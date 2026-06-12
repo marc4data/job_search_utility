@@ -6,6 +6,9 @@ profile/verified_skills.md
 *.docx
 *tracker*.xlsx
 job_tracker.xlsx
+# build artifacts / local smoke tests
+*.plugin
+smoke_test_output/
 # python
 __pycache__/
 *.pyc
