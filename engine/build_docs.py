@@ -420,91 +420,27 @@ def build_cover_letter(filename, company, role, location, body_paragraphs):
 
 
 # =============================================================================
-# ATS SCORING  —  score_and_log() is the only function batch scripts need
+# ATS SCORING — INTENTIONALLY NOT IN THE ENGINE  (scoring-integrity guard)
 # =============================================================================
-
-TRACKER_PATH = os.environ.get("JS_TRACKER_PATH", "")  # legacy helper only; ATS script writes the tracker
-
-def ats_score_resume(resume_path, jd_keywords):
-    """
-    Score a resume .docx against a keyword list.
-
-    jd_keywords accepts two formats:
-      • Flat list of strings          → ["dbt", "Snowflake", "Python", ...]
-      • Weighted tuples               → [("dbt", 3), ("Python", 2), ("agile", 1), ...]
-
-    Weights allow you to mark required skills heavier than nice-to-haves:
-      3 = must-have  |  2 = strong differentiator  |  1 = contextual / soft skill
-
-    Returns: integer 0-100
-    """
-    from docx import Document as _D
-    doc  = _D(resume_path)
-    text = " ".join(p.text for p in doc.paragraphs).lower()
-    # include any table cells (expertise strip is a paragraph, but be safe)
-    for tbl in doc.tables:
-        for row in tbl.rows:
-            for cell in row.cells:
-                text += " " + cell.text.lower()
-
-    if not jd_keywords:
-        return 0
-
-    # Normalise to (keyword, weight) tuples
-    if isinstance(jd_keywords[0], (list, tuple)):
-        weighted = [(str(kw).lower(), int(w)) for kw, w in jd_keywords]
-    else:
-        weighted = [(str(kw).lower(), 1) for kw in jd_keywords]
-
-    max_pts = sum(w for _, w in weighted)
-    hit_pts = sum(w for kw, w in weighted if kw in text)
-    return round((hit_pts / max_pts) * 100) if max_pts else 0
-
-
-def _write_tracker_score(company, role, score):
-    """
-    Write score to column K (Resume Score) in the tracker.
-    Matches on first word of company + first 3 words of role title.
-    Returns True if the row was found and updated.
-    """
-    from openpyxl import load_workbook as _lw
-    wb  = _lw(TRACKER_PATH)
-    ws  = wb["📋 Applications"]
-    hdrs = [c.value for c in ws[3]]
-
-    co_col    = hdrs.index("Company")      + 1
-    role_col  = hdrs.index("Role / Title") + 1
-    score_col = hdrs.index("Resume Score") + 1
-
-    # Normalise search terms
-    co_stem   = company.lower().replace(",", "").split()[0][:6]   # first 6 chars of first word
-    role_words = [w for w in role.lower().split()[:4]]             # first 4 role words
-
-    for row in ws.iter_rows(min_row=4):
-        cell_co   = str(row[co_col   - 1].value or "").lower()
-        cell_role = str(row[role_col - 1].value or "").lower()
-        co_hit    = co_stem in cell_co
-        role_hit  = sum(1 for w in role_words if w in cell_role) >= 2
-        if co_hit and role_hit:
-            row[score_col - 1].value = score
-            wb.save(TRACKER_PATH)
-            return True
-    return False
-
-
-def score_and_log(resume_path, company, role, jd_keywords):
-    """
-    One-liner for batch scripts:
-        score_and_log(resume_path, "Acme Corp", "Senior Analytics Engineer", jd_keywords)
-
-    Scores the resume, prints result, writes to tracker.
-    Returns the integer score.
-    """
-    score = ats_score_resume(resume_path, jd_keywords)
-    found = _write_tracker_score(company, role, score)
-    tag   = "✓ logged" if found else "⚠ tracker row not matched"
-    print(f"  ATS Score: {score}/100  [{tag}]")
-    return score
+#
+# The engine does NOT score resumes and NEVER writes to the tracker's
+# "Resume Score" column. The authoritative True ATS Score is computed AND
+# written solely by the separate ats_score script (templates/ats_score_template.py
+# → scripts/ats_score_<date>.py), run AFTER the build batch.
+#
+# Earlier versions shipped engine helpers — ats_score_resume(), score_and_log(),
+# and _write_tracker_score() — that let a build batch write the Resume Score
+# directly. That is the foot-gun this guard removes: any second scorer in the
+# build path can disagree with (or silently overwrite) the authoritative score,
+# and an over-soft keyword list inflated every role toward 100. They were never
+# called by the shipped templates and have been deleted.
+#
+# If you need a quick read on keyword coverage WHILE iterating, use
+# critique_resume() below — it is content-QA only and writes nothing. The number
+# that lands in the tracker must always come from the ats_score script.
+#
+# DO NOT add a tracker write here. See references/process_rules.md §2.
+# =============================================================================
 
 
 # =============================================================================
