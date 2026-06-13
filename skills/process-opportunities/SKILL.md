@@ -21,9 +21,11 @@ starting.** It is the playbook. The two invariants below are non-negotiable.
 
 ## Step 0 — Confirm scope
 Identify the working folder (`<home>` — the job search folder containing
-`engine/`, `profile/`, `job_tracker.xlsx`). Read `<home>/profile/verified_skills.md`
-now. Ask which jobs to process if unclear: the rows already seeded in the tracker
-for today, or ones the user will paste.
+`profile/`, `tracker/`, `docs/`, and a hidden `.system/`). Read
+`<home>/profile/verified_skills.md` now. The tracker is the single
+`<home>/tracker/job_search_tracker_<name>.xlsx`. Ask which jobs to process if
+unclear: the rows already seeded in the tracker for today, or ones the user will
+paste.
 
 ## Step 1 — Get each job description
 - If the tracker rows have a Job URL, retrieve the full JD. LinkedIn and most
@@ -46,7 +48,7 @@ Cross-check every claim against `verified_skills.md` as you write.
 
 ## Step 3 — Build the documents (3-pass QA, no tracker write)
 Copy `${CLAUDE_PLUGIN_ROOT}/templates/build_batch_template.py` to
-`<home>/scripts/build_batch_<date>.py`. Fill in one `do_role(...)` block per job
+`<home>/.system/scripts/<date>/build_batch_<date>.py`. Fill in one `do_role(...)` block per job
 with the chosen base, the summary, the expertise line, `jd_hard` (5-10 genuine
 discriminators), any honest `gap_patches`/`tight_patches`, and the 3 cover-letter
 paragraphs. Run it. It prints the 3-pass checklist score and writes the `.docx`
@@ -54,7 +56,7 @@ files — it does NOT touch the tracker.
 
 ## Step 4 — Score (the authoritative tracker number)
 Copy `${CLAUDE_PLUGIN_ROOT}/templates/ats_score_template.py` to
-`<home>/scripts/ats_score_<date>.py`. For each role build a 25-40 term `jd_full`
+`<home>/.system/scripts/<date>/ats_score_<date>.py`. For each role build a 25-40 term `jd_full`
 from the ACTUAL JD (weights 3/2/1), **including the genuine discriminators the
 candidate lacks** — required tools they don't have, the company's sector/domain,
 exact must-have phrases. Set each role's tracker `row`. Run it: it reads the
@@ -69,5 +71,6 @@ built `.docx`, computes the True ATS Score, and writes it to the tracker.
 - Offer to keep `verified_skills.md` updated if new facts surfaced.
 
 ## Naming
+Built documents land in `<home>/docs/current/` (the latest batch only), named
 `001_<Name> - <Company> - <Role Stub> - Resume.docx` and `- Cover Letter.docx`.
-The `001_` prefix sorts the user's documents to the top of any folder.
+The `001_` prefix sorts the user's freshest documents to the top of `current/`.

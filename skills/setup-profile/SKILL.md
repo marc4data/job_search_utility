@@ -15,19 +15,35 @@ conversation in plain language; do not expose file paths unless asked.
 ## Step 1 — Establish the working folder
 
 Ask the user where their job search lives (a folder on their computer). If no
-folder is connected, request one. Inside it, create this layout and copy the
-engine + templates in:
+folder is connected, request one. Inside it, create this **canonical structure**.
+The top layer is plain-language (the user reads it); the hidden `.system/` holds
+the technical guts (safe to ignore).
 
 ```
-<home>/engine/build_docs.py          ← copy from ${CLAUDE_PLUGIN_ROOT}/engine/
-<home>/profile/                      ← you will generate the 3 files here
-<home>/scripts/                      ← per-run build/ats scripts go here later
-<home>/job_tracker.xlsx             ← copy from ${CLAUDE_PLUGIN_ROOT}/templates/job_tracker_template.xlsx
+<home>/
+├── README.md            ← plain-language "how this works" (you generate it)
+├── tracker/             ← job_search_tracker_<name>.xlsx
+├── docs/
+│   ├── current/         ← the latest batch ONLY (built résumés + cover letters)
+│   └── submitted/       ← flat archive of all prior batches
+├── profile/
+│   ├── profile.py, bases.py, verified_skills.md   ← you generate these
+│   └── history/         ← dated snapshots (used later)
+└── .system/
+    ├── engine/build_docs.py   ← copy from ${CLAUDE_PLUGIN_ROOT}/engine/
+    └── scripts/               ← per-run build/ats scripts go here, under <date>/
 ```
 
-Copy `${CLAUDE_PLUGIN_ROOT}/engine/build_docs.py` to `<home>/engine/`. Copy the
-tracker template to `<home>/job_tracker.xlsx`. Keep the `templates/*.py` handy —
-each run will copy them into `<home>/scripts/`.
+Create every folder above (leave `docs/current/`, `docs/submitted/`,
+`profile/history/` empty for now). Copy
+`${CLAUDE_PLUGIN_ROOT}/engine/build_docs.py` to `<home>/.system/engine/`. Copy the
+tracker template `${CLAUDE_PLUGIN_ROOT}/templates/job_tracker_template.xlsx` to
+`<home>/tracker/job_search_tracker_<name>.xlsx` (slugify the user's name). Keep the
+`templates/*.py` handy — each run copies them into `<home>/.system/scripts/<date>/`.
+
+Finally, write a plain-language `<home>/README.md` from
+`${CLAUDE_PLUGIN_ROOT}/templates/workspace_README_template.md`, filling in the
+user's name. It explains each top-level folder in user terms — no internal paths.
 
 ## Step 2 — Interview the user
 
@@ -71,11 +87,12 @@ not verified, leave it out.
 
 ## Step 4 — Verify the build works
 
-Write a tiny throwaway script in `<home>/scripts/` that sets
-`JS_PROFILE=<home>/profile/profile.py`, execs `<home>/engine/build_docs.py`, and
-calls `build_resume(...)` once with the LEADER base to produce a sample résumé.
-Open it, confirm the name/contact/education render correctly, then delete the
-sample. If it errors, fix the profile files before finishing.
+Write a tiny throwaway script in `<home>/.system/scripts/` that sets
+`JS_PROFILE=<home>/profile/profile.py`, execs `<home>/.system/engine/build_docs.py`,
+and calls `build_resume(...)` once with the LEADER base to write a sample résumé
+into `<home>/docs/current/`. Open it, confirm the name/contact/education render
+correctly, then delete the sample. If it errors, fix the profile files before
+finishing.
 
 ## Step 5 — Hand off
 
