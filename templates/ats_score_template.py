@@ -28,9 +28,33 @@ except ImportError as e:
         "interpreter that runs this script are the same one.\n"
     )
 
-HOME    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT     = HOME + "/"
-TRACKER = os.path.join(HOME, "job_tracker.xlsx")
+# ── resolve the working folder by walking up to the dir that holds .system/ ──
+def _find_home(start):
+    d = os.path.dirname(os.path.abspath(start))
+    while d != os.path.dirname(d):
+        if os.path.isdir(os.path.join(d, ".system")) and os.path.isdir(os.path.join(d, "profile")):
+            return d
+        d = os.path.dirname(d)
+    raise SystemExit("Could not locate the job-search working folder "
+                     "(no .system/ ancestor of this script).")
+
+def _find_tracker(home):
+    tdir = os.path.join(home, "tracker")
+    files = sorted(f for f in os.listdir(tdir)
+                   if f.endswith(".xlsx") and not f.startswith("~$")) if os.path.isdir(tdir) else []
+    if not files:
+        raise SystemExit("No tracker .xlsx found in <home>/tracker/. Run setup-profile first.")
+    return os.path.join(tdir, files[0])
+
+# Resolved at import when run as a real script (this file sits inside a workspace).
+# Tolerant of import from outside a workspace (e.g. unit tests) — main() re-resolves
+# and raises the clear error then if still unset.
+try:
+    HOME    = _find_home(__file__)
+    OUT     = os.path.join(HOME, "docs", "current") + os.sep   # résumés are read from here
+    TRACKER = _find_tracker(HOME)
+except SystemExit:
+    HOME = OUT = TRACKER = None
 SHEET   = "Applications"            # change if your tracker tab is named differently
 
 
@@ -99,6 +123,11 @@ ROLES = [
 ]
 
 def main():
+    global HOME, OUT, TRACKER
+    if HOME is None:  # imported tolerantly; resolve now and surface a clear error if not in a workspace
+        HOME = _find_home(__file__)
+        OUT = os.path.join(HOME, "docs", "current") + os.sep
+        TRACKER = _find_tracker(HOME)
     results = []
     for r in ROLES:
         txt = get_resume_text(OUT + r["resume"])

@@ -6,24 +6,35 @@ WHAT THIS DOES
   content-QA (critique_and_refine). It does NOT write any score to the tracker.
   The tracker score is written ONLY by ats_score_<date>.py (run that after this).
 
-WORKING-FOLDER LAYOUT this expects (set up by the setup-profile skill):
-  <home>/engine/build_docs.py
+WORKING-FOLDER LAYOUT this expects (created by the setup-profile skill):
+  <home>/.system/engine/build_docs.py
   <home>/profile/profile.py, bases.py, verified_skills.md
-  <home>/scripts/   (this file)
-  <home>/job_tracker.xlsx
-  <home>/           (built .docx land here)
+  <home>/.system/scripts/<date>/   (this file)
+  <home>/tracker/job_search_tracker_<name>.xlsx
+  <home>/docs/current/             (built .docx land here)
 """
 import os, sys, importlib.util
 
-# ── resolve the working folder (parent of scripts/) ─────────────────────────
-HOME    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ENGINE  = os.path.join(HOME, "engine", "build_docs.py")
+# ── resolve the working folder by walking up to the dir that holds .system/ ──
+# Robust regardless of how deep under .system/scripts/<date>/ this copy sits.
+def _find_home(start):
+    d = os.path.dirname(os.path.abspath(start))
+    while d != os.path.dirname(d):
+        if os.path.isdir(os.path.join(d, ".system")) and os.path.isdir(os.path.join(d, "profile")):
+            return d
+        d = os.path.dirname(d)
+    raise SystemExit("Could not locate the job-search working folder "
+                     "(no .system/ ancestor of this script).")
+
+HOME    = _find_home(__file__)
+ENGINE  = os.path.join(HOME, ".system", "engine", "build_docs.py")
 PROFILE = os.path.join(HOME, "profile", "profile.py")
 BASES   = os.path.join(HOME, "profile", "bases.py")
-OUT     = HOME + "/"
+OUT     = os.path.join(HOME, "docs", "current") + os.sep
 
+os.makedirs(OUT, exist_ok=True)
 os.environ["JS_PROFILE"] = PROFILE
-os.environ["JS_OUT_DIR"] = HOME
+os.environ["JS_OUT_DIR"] = OUT
 
 # load the engine (defines build_resume, build_cover_letter, critique_and_refine, ...)
 exec(compile(open(ENGINE).read(), ENGINE, "exec"), globals())
