@@ -6,6 +6,8 @@ profile/verified_skills.md
 *.docx
 *tracker*.xlsx
 job_tracker.xlsx
+# ...but the shipped tracker template is tracked (B1) so it lands in the .plugin
+!templates/job_tracker_template.xlsx
 # build artifacts / local smoke tests
 *.plugin
 smoke_test_output/
