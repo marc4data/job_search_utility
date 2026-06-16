@@ -28,7 +28,8 @@ unclear: the rows already seeded in the tracker for today, or ones the user will
 paste.
 
 ## Step 1 — Get each job description
-- If the tracker rows have a Job URL, retrieve the full JD. LinkedIn and most
+- If the tracker rows have a job link (the **Sourced From (w/link)** column),
+  retrieve the full JD. LinkedIn and most
   boards are logged-in / JavaScript-rendered — use the browser (Claude in
   Chrome) and read the page text; a plain fetch returns an empty shell.
 - Or accept JDs the user pastes directly.
