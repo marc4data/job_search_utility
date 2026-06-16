@@ -55,7 +55,7 @@ try:
     TRACKER = _find_tracker(HOME)
 except SystemExit:
     HOME = OUT = TRACKER = None
-SHEET   = "Applications"            # change if your tracker tab is named differently
+SHEET   = "Applications"            # fallback name; the real tab is found by header (see _resolve_sheet)
 
 
 def get_resume_text(path):
@@ -81,10 +81,25 @@ def ats_score(resume_text, jd_terms):
     return (round(found_w / total * 100) if total else 0), found, missed
 
 
+def _resolve_sheet(wb):
+    """Locate the Applications tab by its row-3 'Resume Score' header.
+
+    The contract is the header layout, not the tab name — this finds the right
+    sheet even when the tab is emoji-prefixed or renamed (the shipped tracker
+    uses '📋 Applications'). Falls back to the configured SHEET name, then the
+    active sheet; write_tracker() then raises a clear error if the column is
+    still missing.
+    """
+    for ws in wb.worksheets:
+        if "Resume Score" in [c.value for c in ws[3]]:
+            return ws
+    return wb[SHEET] if SHEET in wb.sheetnames else wb.active
+
+
 def write_tracker(row_num, score):
     """Write score into the 'Resume Score' column of the given row (header on row 3)."""
     wb = openpyxl.load_workbook(TRACKER)
-    ws = wb[SHEET] if SHEET in wb.sheetnames else wb.active
+    ws = _resolve_sheet(wb)
     headers = [c.value for c in ws[3]]
     try:
         col = headers.index("Resume Score") + 1
