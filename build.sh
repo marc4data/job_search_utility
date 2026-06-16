@@ -47,6 +47,7 @@ REQUIRED=(
   "engine/build_docs.py"
   "templates/ats_score_template.py"
   "templates/build_batch_template.py"
+  "templates/job_tracker_template.xlsx"   # gitignored by *tracker*.xlsx; must stay tracked to ship (B1)
 )
 for f in "${REQUIRED[@]}"; do
   if ! grep -q " ${f}$" <<<"$CONTENTS"; then
