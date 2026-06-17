@@ -48,6 +48,7 @@ REQUIRED=(
   "templates/ats_score_template.py"
   "templates/build_batch_template.py"
   "templates/job_tracker_template.xlsx"   # gitignored by *tracker*.xlsx; must stay tracked to ship (B1)
+  "templates/jd_retrieval.py"             # Step-1 JD-retrieval helper (G1/G2/G3)
 )
 for f in "${REQUIRED[@]}"; do
   if ! grep -q " ${f}$" <<<"$CONTENTS"; then

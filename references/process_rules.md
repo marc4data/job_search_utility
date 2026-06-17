@@ -21,6 +21,43 @@ clear the first 6-second recruiter scan and the cover-letter callback decision.
 
 ---
 
+## 1a. JD retrieval — resilient, preflight-first (Epic G)
+
+Getting the real job description is where the first live run lost the most time.
+The rules below make it reliable and headless-by-default. The helper
+`${CLAUDE_PLUGIN_ROOT}/templates/jd_retrieval.py` does the deterministic parsing;
+you do the fetches.
+
+1. **Read the link, not the label.** The *Sourced From (w/link)* cell often shows
+   text like "Linkedin" or "DM Message" while the real URL is the cell's
+   **hyperlink target**. Always resolve via `resolve_cell_link(cell)` (which
+   reads `cell.hyperlink.target` first, then any URL in the value). Find the
+   column by header with `find_link_column(headers)`, never by a fixed index.
+
+2. **Preflight the whole batch first.** Call `read_job_links(ws)` to classify
+   every selected role before fetching anything: `linkedin-guest` / `web-fetch`
+   / `local-file` / `needs-paste`. This lets you ask for all manual pastes once.
+
+3. **LinkedIn → guest endpoint first.** Logged-in LinkedIn pages are JS-rendered
+   and **hide the description on jobs you've already applied to**
+   ("Application submitted"). Parse the jobId (`parse_linkedin_job_id`) from a
+   `/jobs/view/<id>` or `currentJobId=<id>` URL and fetch
+   `/jobs-guest/jobs/api/jobPosting/<jobId>` (`linkedin_guest_url`) **before**
+   any browser/login path — it returns the raw JD without a session. Only if the
+   guest endpoint fails do you fall back to an in-browser read. A LinkedIn URL
+   with no parseable jobId degrades to browser, then paste — never an empty shell.
+
+4. **Chrome is a last resort, not a prerequisite.** Most links resolve headlessly
+   (embedded link + guest endpoint + plain fetch). Recommend installing Claude in
+   Chrome only when a specific role genuinely requires it after headless attempts.
+
+5. **Never guess a JD.** A role whose JD can't be retrieved is added to the single
+   batched paste request, or explicitly deferred with a note (it appears in the
+   Step 5 summary table with score `—` and a reason). You never build or score a
+   role from an assumed or partial description.
+
+---
+
 ## 1. Pick the base: LEADER or HANDSON
 
 - **LEADER** — people-manager, director, head-of, VP roles. The job is about
@@ -135,6 +172,27 @@ to where it honestly belongs.
 **Expected ranges:** 75-95 for a well-targeted strong fit; 70s for a partial
 fit with real tool/domain gaps. **A flat 100 is a red flag** that the term list
 was too soft — add the discriminators a sharp recruiter would actually weigh.
+
+---
+
+## 9. The batch summary table (mandatory — Epic J)
+
+Every batch ends with the same fixed-format table so the user always gets a
+consistent, scannable result. It is **emitted by the ATS script**
+(`summary_table(...)`), not free-authored — so each row's Score is exactly the
+True ATS Score written to that role's tracker row.
+
+- Columns, in order: **Score** · **Role** (`Company — Title`) · **Base**
+  (`LEADER`/`HANDSON`) · **Why** (the strongest matched strength, then
+  `gap: <the genuine gap>`).
+- **Sorted by Score, descending.**
+- Followed by a one-line **MIN / AVG / MAX** summary and the reminder that these
+  are honest True ATS Scores (70s = partial fit; high-80s–90s = strong fit).
+- A role deferred for a missing JD (§1a) appears with score `—` and its reason —
+  listed, never silently dropped.
+
+The "Why" never invents a strength or hides a real gap (invariant #2); the Score
+is always the True ATS Score (invariant #1).
 
 ---
 
