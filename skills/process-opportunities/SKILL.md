@@ -34,13 +34,31 @@ Identify the working folder (`<home>` — the job search folder containing
 unclear: the rows already seeded in the tracker for today, or ones the user will
 paste.
 
-## Step 1 — Get each job description
-- If the tracker rows have a job link (the **Sourced From (w/link)** column),
-  retrieve the full JD. LinkedIn and most
-  boards are logged-in / JavaScript-rendered — use the browser (Claude in
-  Chrome) and read the page text; a plain fetch returns an empty shell.
-- Or accept JDs the user pastes directly.
-- Capture: full requirements text, company, role, location, sector/domain.
+## Step 1 — Get each job description (preflight first)
+See `process_rules.md` §1a for the full retrieval playbook. Use
+`${CLAUDE_PLUGIN_ROOT}/templates/jd_retrieval.py` — do **not** eyeball the cells.
+
+1. **Resolve + classify every selected role's link up front.** Run a short
+   python that opens the tracker and calls `jd_retrieval.read_job_links(ws)`.
+   That reads the **embedded hyperlink target** of the *Sourced From (w/link)*
+   cell (not the display text like "Linkedin"/"DM Message"), finds the link
+   column by header, and returns `(row, target, plan)` per role where `plan` is
+   `linkedin-guest` / `web-fetch` / `local-file` / `needs-paste`.
+2. **Fetch by plan, headless first:**
+   - `linkedin-guest` → fetch the guest endpoint
+     (`jd_retrieval.linkedin_guest_url(job_id)`) **before** any browser/login
+     path; it returns the JD even for jobs marked "Application submitted".
+   - `web-fetch` → try a headless fetch; if it returns an empty/login shell,
+     fall back to the browser.
+   - `local-file` → read the file's text.
+   - `needs-paste` → collect for step 3 (do not skip).
+   - Recommend installing Claude in Chrome **only** if a role still fails after
+     headless attempts.
+3. **Batch the paste request once.** Ask the user a single time to paste the
+   JDs for every role that couldn't be retrieved — not one prompt per role.
+4. **Never build or score from a guessed JD.** A role with no real JD is
+   deferred with a note and shown in the Step 5 table with score `—`.
+- Capture per role: full requirements text, company, role, location, sector/domain.
 
 ## Step 2 — Per role: research, choose base, draft, review
 For each job, follow the mandatory order from `process_rules.md`:

@@ -21,6 +21,43 @@ clear the first 6-second recruiter scan and the cover-letter callback decision.
 
 ---
 
+## 1a. JD retrieval — resilient, preflight-first (Epic G)
+
+Getting the real job description is where the first live run lost the most time.
+The rules below make it reliable and headless-by-default. The helper
+`${CLAUDE_PLUGIN_ROOT}/templates/jd_retrieval.py` does the deterministic parsing;
+you do the fetches.
+
+1. **Read the link, not the label.** The *Sourced From (w/link)* cell often shows
+   text like "Linkedin" or "DM Message" while the real URL is the cell's
+   **hyperlink target**. Always resolve via `resolve_cell_link(cell)` (which
+   reads `cell.hyperlink.target` first, then any URL in the value). Find the
+   column by header with `find_link_column(headers)`, never by a fixed index.
+
+2. **Preflight the whole batch first.** Call `read_job_links(ws)` to classify
+   every selected role before fetching anything: `linkedin-guest` / `web-fetch`
+   / `local-file` / `needs-paste`. This lets you ask for all manual pastes once.
+
+3. **LinkedIn → guest endpoint first.** Logged-in LinkedIn pages are JS-rendered
+   and **hide the description on jobs you've already applied to**
+   ("Application submitted"). Parse the jobId (`parse_linkedin_job_id`) from a
+   `/jobs/view/<id>` or `currentJobId=<id>` URL and fetch
+   `/jobs-guest/jobs/api/jobPosting/<jobId>` (`linkedin_guest_url`) **before**
+   any browser/login path — it returns the raw JD without a session. Only if the
+   guest endpoint fails do you fall back to an in-browser read. A LinkedIn URL
+   with no parseable jobId degrades to browser, then paste — never an empty shell.
+
+4. **Chrome is a last resort, not a prerequisite.** Most links resolve headlessly
+   (embedded link + guest endpoint + plain fetch). Recommend installing Claude in
+   Chrome only when a specific role genuinely requires it after headless attempts.
+
+5. **Never guess a JD.** A role whose JD can't be retrieved is added to the single
+   batched paste request, or explicitly deferred with a note (it appears in the
+   Step 5 summary table with score `—` and a reason). You never build or score a
+   role from an assumed or partial description.
+
+---
+
 ## 1. Pick the base: LEADER or HANDSON
 
 - **LEADER** — people-manager, director, head-of, VP roles. The job is about
