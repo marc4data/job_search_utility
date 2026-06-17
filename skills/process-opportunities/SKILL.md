@@ -93,7 +93,13 @@ built `.docx`, computes the True ATS Score, and writes it to the tracker.
   the `jd_full` was too soft — add the discriminators a sharp recruiter would
   weigh and re-run.
 - Present the résumé + cover-letter files to the user.
-- Briefly report each score with its top found/missed terms so the gap is visible.
+- **Always end with the batch summary table (mandatory — see `process_rules.md`
+  §9).** The ATS script prints it via `summary_table(...)`; paste that exact
+  output. It is sorted by score descending with columns **Score · Role
+  (Company — Title) · Base · Why** (`strength; gap: …`), followed by a
+  **MIN / AVG / MAX** line. Each row's Score is the True ATS Score written to the
+  tracker. Roles whose JD couldn't be retrieved appear with score `—` and a
+  reason — never omitted.
 - Offer to keep `verified_skills.md` updated if new facts surfaced.
 
 ## Naming

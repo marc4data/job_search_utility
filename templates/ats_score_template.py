@@ -110,6 +110,55 @@ def write_tracker(row_num, score):
     print(f"  [tracker → row {row_num}: {score}]")
 
 
+# ── J1: the mandatory end-of-batch summary table ────────────────────────────
+# Emitted here (not free-authored) so every row's Score IS the True ATS Score
+# written above — the table and the tracker can't disagree.
+def _term_and_weight(formatted):
+    """'business intelligence[3]' -> ('business intelligence', 3)."""
+    m = re.match(r"^(.*)\[(\d+)\]$", formatted)
+    return (m.group(1), int(m.group(2))) if m else (formatted, 0)
+
+
+def _strongest(formatted_terms):
+    """The highest-weight term in a found/missed list, or None."""
+    if not formatted_terms:
+        return None
+    return max((_term_and_weight(t) for t in formatted_terms), key=lambda tw: tw[1])[0]
+
+
+def summary_row(company, title, base, score, found, missed):
+    """A scored table row. 'Why' = strongest matched strength; gap: genuine gap."""
+    strength = _strongest(found) or "—"
+    gap = _strongest(missed)
+    return {"score": score, "company": company, "title": title, "base": base,
+            "why": f"{strength}; gap: {gap if gap else 'none'}"}
+
+
+def deferred_row(company, title, base, reason):
+    """A role with no retrievable JD — listed, never silently dropped."""
+    return {"score": None, "company": company, "title": title,
+            "base": base or "—", "why": f"deferred: {reason}"}
+
+
+def summary_table(rows):
+    """Markdown table sorted by score desc (deferred rows last) + MIN/AVG/MAX."""
+    scored = sorted((r for r in rows if r["score"] is not None),
+                    key=lambda r: -r["score"])
+    deferred = [r for r in rows if r["score"] is None]
+    lines = ["| Score | Role | Base | Why |", "|---|---|---|---|"]
+    for r in scored + deferred:
+        sc = r["score"] if r["score"] is not None else "—"
+        lines.append(f"| {sc} | {r['company']} — {r['title']} | {r['base']} | {r['why']} |")
+    if scored:
+        s = [r["score"] for r in scored]
+        stats = f"MIN {min(s)} · AVG {round(sum(s) / len(s))} · MAX {max(s)}"
+    else:
+        stats = "MIN — · AVG — · MAX —"
+    note = ("These are honest True ATS Scores: 70s = partial fit, "
+            "high-80s–90s = strong fit.")
+    return "\n".join(lines) + f"\n\n**{stats}**  \n_{note}_"
+
+
 # ════════════════════════════════════════════════════════════════════════════
 # ONE BLOCK PER ROLE. Build jd_full from the ACTUAL job description:
 #   weight 3 (~5-6): required / must-have terms + the role's defining words
@@ -117,12 +166,16 @@ def write_tracker(row_num, score):
 #   weight 1 (~10):  nice-to-haves, supporting vocabulary, sector/domain words
 # Include tools/domains you LACK so the score is honest. 25-40 terms total.
 # row = the tracker row number you seeded for this job.
+# base = "LEADER" or "HANDSON" (matches build_batch) — shown in the summary table.
+# A role whose JD couldn't be retrieved: give it {"deferred": "<reason>"} instead
+# of resume/jd_full — it's listed in the table with score "—", never dropped.
 # ════════════════════════════════════════════════════════════════════════════
 ROLES = [
     {
         "row": 4,
         "company": "Example Co",
         "role": "Director of Analytics",
+        "base": "LEADER",
         "resume": "001_Your Name - Example Co - Director of Analytics - Resume.docx",
         "jd_full": [
             ("business intelligence", 3), ("analytics", 3), ("data quality", 3),
@@ -143,8 +196,14 @@ def main():
         HOME = _find_home(__file__)
         OUT = os.path.join(HOME, "docs", "current") + os.sep
         TRACKER = _find_tracker(HOME)
-    results = []
+    rows = []
     for r in ROLES:
+        if r.get("deferred"):
+            print(f"\nRow {r.get('row', '—')} | {r['company']} — {r.get('role', '')}: "
+                  f"DEFERRED ({r['deferred']}) — not scored")
+            rows.append(deferred_row(r["company"], r.get("role", ""),
+                                     r.get("base"), r["deferred"]))
+            continue
         txt = get_resume_text(OUT + r["resume"])
         score, found, missed = ats_score(txt, r["jd_full"])
         print(f"\nRow {r['row']} | {r['company']} — {r['role']}")
@@ -152,12 +211,14 @@ def main():
         print(f"  Found:  {', '.join(found)}")
         print(f"  Missed: {', '.join(missed)}")
         write_tracker(r["row"], score)
-        results.append((r["row"], r["company"], score))
+        rows.append(summary_row(r["company"], r["role"], r.get("base", "—"),
+                                score, found, missed))
 
+    # The standard batch summary — paste this to the user (J1). Each row's Score
+    # is the exact number written to the tracker above.
     print("\n" + "=" * 60)
-    print("True ATS Scores written to tracker:")
-    for row, company, score in sorted(results, key=lambda x: -x[2]):
-        print(f"  Row {row}  {company:<16}  {score}/100")
+    print("Batch summary (paste to the user):\n")
+    print(summary_table(rows))
     print("=" * 60)
 
 

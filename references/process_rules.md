@@ -175,6 +175,27 @@ was too soft — add the discriminators a sharp recruiter would actually weigh.
 
 ---
 
+## 9. The batch summary table (mandatory — Epic J)
+
+Every batch ends with the same fixed-format table so the user always gets a
+consistent, scannable result. It is **emitted by the ATS script**
+(`summary_table(...)`), not free-authored — so each row's Score is exactly the
+True ATS Score written to that role's tracker row.
+
+- Columns, in order: **Score** · **Role** (`Company — Title`) · **Base**
+  (`LEADER`/`HANDSON`) · **Why** (the strongest matched strength, then
+  `gap: <the genuine gap>`).
+- **Sorted by Score, descending.**
+- Followed by a one-line **MIN / AVG / MAX** summary and the reminder that these
+  are honest True ATS Scores (70s = partial fit; high-80s–90s = strong fit).
+- A role deferred for a missing JD (§1a) appears with score `—` and its reason —
+  listed, never silently dropped.
+
+The "Why" never invents a strength or hides a real gap (invariant #2); the Score
+is always the True ATS Score (invariant #1).
+
+---
+
 ## 8. File hygiene
 
 - Prefix every output file `001_` so your documents sort to the top of any folder.

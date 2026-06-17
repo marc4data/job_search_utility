@@ -124,3 +124,51 @@ def test_classify_link_plans(tmp_path):
     present.write_text("a saved jd")
     assert jd.classify_link(str(present)) == "local-file"
     assert jd.classify_link(str(tmp_path / "missing.pdf")) == "needs-paste"
+
+
+# ── J1: the mandatory end-of-batch summary table (emitted by the ATS script) ─
+def _ats():
+    return _load_module(
+        "ats_score_for_table",
+        os.path.join(REPO_ROOT, "templates", "ats_score_template.py"),
+    )
+
+
+def test_summary_why_picks_strongest_strength_and_gap():
+    ats = _ats()
+    row = ats.summary_row(
+        "Acme", "Director of BI", "LEADER",
+        87, found=["sql[1]", "business intelligence[3]"],
+        missed=["dbt[1]", "snowflake[2]"],
+    )
+    assert row["why"] == "business intelligence; gap: snowflake"
+
+
+def test_summary_table_sorts_and_scores_match_tracker():
+    ats = _ats()
+    rows = [
+        ats.summary_row("Low Co", "Analyst", "HANDSON", 71, ["sql[2]"], ["spark[3]"]),
+        ats.summary_row("High Co", "Director", "LEADER", 92, ["leadership[3]"], []),
+        ats.deferred_row("Gap Co", "Eng", "HANDSON", "JD behind login; pasted not provided"),
+    ]
+    table = ats.summary_table(rows)
+    # The "|---|" separator has no leading space, so it's already excluded here.
+    lines = [ln for ln in table.splitlines() if ln.startswith("| ")]
+    body = lines[1:]  # skip the header row
+
+    # Sorted high→low, deferred row last with an em dash.
+    assert body[0].startswith("| 92 | High Co — Director | LEADER |")
+    assert body[1].startswith("| 71 | Low Co — Analyst | HANDSON |")
+    assert body[2].startswith("| — | Gap Co — Eng |")
+    assert "deferred: JD behind login" in body[2]
+
+    # Each printed score equals the score handed in (the True ATS Score).
+    assert "| 92 |" in body[0] and "| 71 |" in body[1]
+    # Stats line over scored rows only: min 71, avg round((71+92)/2)=82, max 92.
+    assert "MIN 71 · AVG 82 · MAX 92" in table
+
+
+def test_summary_table_all_deferred_has_no_numeric_stats():
+    ats = _ats()
+    table = ats.summary_table([ats.deferred_row("X", "Y", None, "no link")])
+    assert "MIN — · AVG — · MAX —" in table
