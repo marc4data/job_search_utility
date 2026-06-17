@@ -12,6 +12,12 @@ tracker — so the `process-opportunities` skill can tailor applications for the
 Read `${CLAUDE_PLUGIN_ROOT}/references/process_rules.md` first. Keep the
 conversation in plain language; do not expose file paths unless asked.
 
+## Step 0 — Announce the build (first user-visible line)
+Before anything else, read the `version` field from
+`${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` and make your **first
+user-visible line**: `job-search-tailor v<version> — setting up your profile`.
+Always read the version from that file; never hardcode it.
+
 ## Step 1 — Establish the working folder
 
 Ask the user where their job search lives (a folder on their computer). If no

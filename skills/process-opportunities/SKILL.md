@@ -11,6 +11,13 @@ write a realistic **True ATS Score** to the tracker. Deliver the documents.
 **Read `${CLAUDE_PLUGIN_ROOT}/references/process_rules.md` in full before
 starting.** It is the playbook. The two invariants below are non-negotiable.
 
+## Step 0a — Announce the build (first user-visible line)
+Before anything else, read the `version` field from
+`${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` and make your **first
+user-visible line**: `job-search-tailor v<version> — processing opportunities`.
+Always read the version from that file; never hardcode it (a hardcoded string
+drifts the moment the plugin is bumped).
+
 ## Invariants (never violate)
 1. **Truthfulness** — never claim a tool/skill/domain not in the user's
    `profile/verified_skills.md` for the relevant company. Honest gaps are
