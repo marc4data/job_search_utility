@@ -49,6 +49,11 @@ REQUIRED=(
   "templates/build_batch_template.py"
   "templates/job_tracker_template.xlsx"   # gitignored by *tracker*.xlsx; must stay tracked to ship (B1)
   "templates/jd_retrieval.py"             # Step-1 JD-retrieval helper (G1/G2/G3)
+  "templates/skills_vocab.py"             # shared tool vocabulary (v0.3.0)
+  "templates/validate_profile.py"         # truthfulness validator (v0.3.0)
+  "templates/skills_demand.py"            # skills-demand repository (v0.3.0)
+  "templates/compile_profile.py"          # Profile Workbook compiler (v0.3.0)
+  "templates/profile_workbook_template.xlsx"  # the editable profile source (v0.3.0)
 )
 for f in "${REQUIRED[@]}"; do
   if ! grep -q " ${f}$" <<<"$CONTENTS"; then
