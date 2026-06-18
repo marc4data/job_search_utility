@@ -33,7 +33,8 @@ the technical guts (safe to ignore).
 │   ├── current/         ← the latest batch ONLY (built résumés + cover letters)
 │   └── submitted/       ← flat archive of all prior batches
 ├── profile/
-│   ├── profile.py, bases.py, verified_skills.md   ← you generate these
+│   ├── Profile_Workbook_<name>.xlsx   ← the user EDITS this (source of truth)
+│   ├── profile.py, bases.py, verified_skills.md   ← COMPILED from the workbook
 │   └── history/         ← dated snapshots (used later)
 └── .system/
     ├── engine/build_docs.py   ← copy from ${CLAUDE_PLUGIN_ROOT}/engine/
@@ -44,7 +45,9 @@ Create every folder above (leave `docs/current/`, `docs/submitted/`,
 `profile/history/` empty for now). Copy
 `${CLAUDE_PLUGIN_ROOT}/engine/build_docs.py` to `<home>/.system/engine/`. Copy the
 tracker template `${CLAUDE_PLUGIN_ROOT}/templates/job_tracker_template.xlsx` to
-`<home>/tracker/job_search_tracker_<name>.xlsx` (slugify the user's name). Keep the
+`<home>/tracker/job_search_tracker_<name>.xlsx`, and the Profile Workbook template
+`${CLAUDE_PLUGIN_ROOT}/templates/profile_workbook_template.xlsx` to
+`<home>/profile/Profile_Workbook_<name>.xlsx` (slugify the user's name). Keep the
 `templates/*.py` handy — each run copies them into `<home>/.system/scripts/<date>/`.
 
 Finally, write a plain-language `<home>/README.md` from
@@ -76,20 +79,33 @@ a résumé/LinkedIn upload so you can pre-fill instead of asking cold. Collect:
 - Tools that are portfolio/learning ONLY (must always be attributed as such)
 - Their domains/sectors; their reusable quantified proof stories
 
-## Step 3 — Generate the three profile files
+## Step 3 — Fill the Profile Workbook, then compile + validate
 
-Use the examples as the exact shape:
-- `${CLAUDE_PLUGIN_ROOT}/profile/profile.example.py` → write `<home>/profile/profile.py`
-- `${CLAUDE_PLUGIN_ROOT}/profile/bases.example.py` → write `<home>/profile/bases.py`
-- `${CLAUDE_PLUGIN_ROOT}/profile/verified_skills.example.md` → write `<home>/profile/verified_skills.md`
+The workbook (`<home>/profile/Profile_Workbook_<name>.xlsx`) is the **single
+source of truth the user edits**; the `.py`/`.md` files are *compiled* from it
+(the engine reads those, but the user never edits them by hand). Fill the
+workbook tabs from the interview:
+- **Identity** — name, contact, links, education, certifications, training.
+- **Skills Matrix** — one row per (tool, company): the truth source. Mark
+  portfolio-only / never-used honestly. A tool with no company and no flag is
+  treated as "confirm" — not yet attributed.
+- **Experience** — per-company domain / what-you-did / leadership.
+- **Career Highlights, Roles, Role Bullets, Tech Expertise, Projects, Bases
+  Config** — the two bases. Build **LEADER** (people-manager framing) and
+  **HANDSON** (IC/builder framing) from the *same* roles; reframe, don't invent.
 
-Build **two** bases from the same history:
-- **LEADER** — people-manager framing (strategy, teams, stakeholders, outcomes).
-- **HANDSON** — individual-contributor framing (what they personally built, tools, depth).
-Most people have done both; reframe the same roles, don't invent new ones.
-
-Every tool named in `bases.py` MUST also appear in `verified_skills.md`. If it's
-not verified, leave it out.
+Then compile and validate:
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/templates/compile_profile.py \
+    <home>/profile/Profile_Workbook_<name>.xlsx  <home>/profile
+python3 ${CLAUDE_PLUGIN_ROOT}/templates/validate_profile.py <home>/profile
+```
+`compile_profile.py` writes `profile.py`, `bases.py`, `verified_skills.md`.
+`validate_profile.py` is the **truthfulness check**: it flags any tool the bases'
+Areas of Expertise or cert line claims that the Skills Matrix doesn't back. Fix
+flagged items in the workbook (attribute to a company, mark portfolio-only, or
+remove) and recompile until it's clean. Every tool in the bases MUST trace to the
+Skills Matrix — that's what keeps applications truthful.
 
 ## Step 4 — Verify the build works
 
@@ -102,10 +118,17 @@ finishing.
 
 ## Step 5 — Hand off
 
-Tell the user setup is done and what they got (their two base résumés, verified-
-skills file, and tracker). Explain the daily loop: paste job links into the
-tracker, then ask to "process job opportunities" — which runs the
-`process-opportunities` skill.
+Tell the user setup is done and what they got: their **Profile Workbook** (the one
+file they edit), two base résumés, and a tracker. Explain the daily loop: paste
+job links into the tracker, then ask to "process job opportunities."
 
-Remind them the verified-skills file is theirs to keep updated; it's what keeps
-every application truthful.
+Explain how to **tune over time**: edit the Profile Workbook, then say "update my
+profile" — you'll recompile `profile.py`/`bases.py`/`verified_skills.md` and re-run
+the truthfulness check. The workbook is the source of truth; never hand-edit the
+compiled files.
+
+## Updating later ("update my profile")
+When the user edits the workbook (or asks to add/confirm a skill), re-run the
+compile + validate from Step 3 and report what the truthfulness check found. This
+is also where the skills-demand report (from `process-opportunities`) pays off:
+add the in-demand skills they can legitimately claim to the Skills Matrix.

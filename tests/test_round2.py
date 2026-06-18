@@ -24,9 +24,13 @@ _VERSION_LITERAL = re.compile(r"\bv?\d+\.\d+\.\d+\b")
 
 
 # ── K1: versioning + runtime banner ─────────────────────────────────────────
-def test_plugin_version_is_0_2_0():
+def test_plugin_version_is_semver_and_in_changelog():
     with open(PLUGIN_JSON) as f:
-        assert json.load(f)["version"] == "0.2.0"
+        version = json.load(f)["version"]
+    assert re.fullmatch(r"\d+\.\d+\.\d+", version), version
+    # the running version must have a CHANGELOG entry (single source of truth)
+    changelog = open(os.path.join(REPO_ROOT, "CHANGELOG.md")).read()
+    assert f"## [{version}]" in changelog, f"CHANGELOG.md missing an entry for {version}"
 
 
 def test_skills_read_version_from_plugin_json_not_hardcoded():

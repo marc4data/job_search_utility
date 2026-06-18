@@ -58,6 +58,13 @@ See `process_rules.md` §1a for the full retrieval playbook. Use
    JDs for every role that couldn't be retrieved — not one prompt per role.
 4. **Never build or score from a guessed JD.** A role with no real JD is
    deferred with a note and shown in the Step 5 table with score `—`.
+5. **Record each retrieved JD into the skills-demand repository.** For every JD
+   you successfully retrieve, call
+   `skills_demand.record_jd(<home>, job_id, company, role, level, jd_text)`
+   (from `${CLAUDE_PLUGIN_ROOT}/templates/skills_demand.py`). It saves the JD to
+   `<home>/docs/job_descriptions/` and updates the demand index. `level` is
+   IC / Manager / Director / VP, inferred from the title. This is what lets the
+   batch tell the user which in-demand skills they're missing (Step 5).
 - Capture per role: full requirements text, company, role, location, sector/domain.
 
 ## Step 2 — Per role: research, choose base, draft, review
@@ -100,7 +107,15 @@ built `.docx`, computes the True ATS Score, and writes it to the tracker.
   **MIN / AVG / MAX** line. Each row's Score is the True ATS Score written to the
   tracker. Roles whose JD couldn't be retrieved appear with score `—` and a
   reason — never omitted.
-- Offer to keep `verified_skills.md` updated if new facts surfaced.
+- **Show the skills-demand report.** Run
+  `python3 ${CLAUDE_PLUGIN_ROOT}/templates/skills_demand.py <home>` and present
+  the **"Skills to consider"** list — in-demand skills (across all jobs processed
+  so far) that are NOT employer-backed in the user's profile, most-wanted first.
+  Frame it as "the market keeps asking for these; here's where you might augment
+  your Profile Workbook" — and only ever suggest adding skills they can claim
+  truthfully (confirm where actually used; never fabricate).
+- Offer to update the **Profile Workbook** if new facts surfaced, then recompile
+  (see setup-profile "Updating later").
 
 ## Naming
 Built documents land in `<home>/docs/current/` (the latest batch only), named

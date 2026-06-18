@@ -1,17 +1,18 @@
 # Job Search Tailor
 
-**Version 0.2.0** · see [CHANGELOG.md](CHANGELOG.md) for full history.
+**Version 0.3.0** · see [CHANGELOG.md](CHANGELOG.md) for full history.
 
 A Cowork plugin that turns a job posting into a tailored résumé + cover letter
 and scores how well your résumé actually matches the role — with a **realistic
 ATS score, not an inflated 100**.
 
-**What's new in 0.2.0:** resilient job-description retrieval (reads the
-hyperlink hidden behind a tracker cell's display text, pulls LinkedIn postings
-via the guest endpoint even for jobs you've already applied to, and asks for any
-manual pastes once up front instead of mid-run); a guaranteed end-of-batch
-summary table (`Score · Role · Base · Why` + MIN/AVG/MAX); and a runtime version
-banner so you always know which build you're running.
+**What's new in 0.3.0:** a friendly **Profile Workbook** (one Excel file you edit)
+that compiles into your résumé profile — so you can tune your job search over
+time without touching code; a **truthfulness validator** that flags any tool your
+résumé would claim that your verified skills don't back; and a **skills-demand
+repository** that records what every processed job asks for and shows you the
+in-demand skills you're missing. (0.2.0 added resilient JD retrieval, the
+end-of-batch summary table, and the runtime version banner.)
 
 It encodes a recruiter's playbook: a 6-second-scan résumé, a three-move cover
 letter, a 3-pass content review, and a separate, honest ATS scorer.

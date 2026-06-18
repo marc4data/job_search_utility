@@ -1,6 +1,6 @@
 {
   "name": "job-search-tailor",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Tailor a resume + cover letter for each job and score the fit with a realistic, non-inflated True ATS score. Includes a one-time profile setup and a daily processing workflow.",
   "author": {
     "name": "Marc Alexander"

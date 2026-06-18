@@ -6,6 +6,33 @@ The running version is the single source of truth in
 [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json); each skill announces
 it as its first line at runtime.
 
+## [0.3.0] — 2026-06-18
+
+Makes the profile tunable by the end user, and turns processed jobs into market
+intelligence.
+
+### Added
+- **Profile Workbook + compiler (Epic L).** A single friendly Excel workbook
+  (`templates/profile_workbook_template.xlsx`) is now the source of truth the
+  user edits. `templates/compile_profile.py` compiles it into
+  `profile.py` / `bases.py` / `verified_skills.md` in the exact formats the
+  engine already consumes — **the engine is unchanged.** `setup-profile` builds
+  and compiles the workbook; "update my profile" recompiles.
+- **Truthfulness validator.** `templates/validate_profile.py` flags any tool the
+  résumé would claim (Areas of Expertise or cert line) that the Skills Matrix
+  doesn't back — catching tuning drift before it reaches an application. Shared
+  tool vocabulary in `templates/skills_vocab.py`.
+- **Skills-demand repository (Epic H).** `templates/skills_demand.py` persists
+  every processed JD's requested skills to a visible `docs/job_descriptions/`
+  corpus + index, aggregates demand by skill × level, and surfaces in-demand
+  skills the user isn't yet employer-backed for — so they can decide what to add
+  to the Profile Workbook.
+
+### Notes
+- Engine and scoring math unchanged. Invariants hold: the tracker's *Resume
+  Score* is only ever the True ATS Score; nothing is claimed that isn't in
+  `verified_skills.md`.
+
 ## [0.2.0] — 2026-06-16
 
 First round shaped by a live clean-room run. Focus: make the *path* to good
