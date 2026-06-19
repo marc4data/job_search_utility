@@ -34,6 +34,13 @@ Identify the working folder (`<home>` — the job search folder containing
 unclear: the rows already seeded in the tracker for today, or ones the user will
 paste.
 
+**Canonical tracker (T1).** The user may keep backup copies in `tracker/` (e.g.
+`… - OG.xlsx`, `…_copy.xlsx`) — that's normal and supported. The scorer resolves
+the **canonical** tracker by the filename contract `job_search_tracker_<name>.xlsx`
+(backups/copies excluded) and writes the True ATS Score **only** there. If it
+can't resolve exactly one canonical tracker, it **halts and asks** — never writes
+to a guessed file. Never read or write a backup/`OG`/copy as if it were canonical.
+
 ## Step 1 — Get each job description (preflight first)
 See `process_rules.md` §1a for the full retrieval playbook. Use
 `${CLAUDE_PLUGIN_ROOT}/templates/jd_retrieval.py` — do **not** eyeball the cells.
@@ -54,17 +61,30 @@ See `process_rules.md` §1a for the full retrieval playbook. Use
    - `needs-paste` → collect for step 3 (do not skip).
    - Recommend installing Claude in Chrome **only** if a role still fails after
      headless attempts.
-3. **Batch the paste request once.** Ask the user a single time to paste the
-   JDs for every role that couldn't be retrieved — not one prompt per role.
-4. **Never build or score from a guessed JD.** A role with no real JD is
-   deferred with a note and shown in the Step 5 table with score `—`.
+3. **Batch the paste request once, with a reason per role (V1).** Collect ALL
+   roles that couldn't be retrieved and ask the user **one** time to paste them —
+   never one prompt per role, never mid-build. Present them as a short list, each
+   with **why** it failed so the user knows what to grab:
+   - `removed` — posting 404s / "no longer available"
+   - `spa` — page renders client-side and returned an empty shell
+   - `login` — login/paywall shell (e.g. LinkedIn with no parseable jobId)
+   - `blocked` — HTTP 403/429
+   - `missing-file` — a local-file link whose file isn't in the folder
+   - `no-link` — the row has no resolvable link at all
+4. **Never build or score from a guessed JD.** A role the user doesn't paste is
+   **deferred with its reason** and shown in the Step 5 table with score `—` — it
+   is never built or scored from an assumed description.
 5. **Record each retrieved JD into the skills-demand repository.** For every JD
    you successfully retrieve, call
    `skills_demand.record_jd(<home>, job_id, company, role, level, jd_text)`
-   (from `${CLAUDE_PLUGIN_ROOT}/templates/skills_demand.py`). It saves the JD to
-   `<home>/docs/job_descriptions/` and updates the demand index. `level` is
-   IC / Manager / Director / VP, inferred from the title. This is what lets the
-   batch tell the user which in-demand skills they're missing (Step 5).
+   (from `${CLAUDE_PLUGIN_ROOT}/templates/skills_demand.py`). `level` is
+   IC / Manager / Director / VP, inferred from the title. It saves the JD under a
+   readable name (`YYYY-MM-DD_company_jobtitle.md`) and extracts demand into four
+   categories — **tool, technical_competency, leadership, domain** — so senior
+   (Director/VP) demand is captured, not just software. Every processed role
+   produces ≥1 row; a role with nothing extractable gets an explicit `no_extract`
+   marker (never a silent drop). The taxonomy/synonyms are editable in
+   `${CLAUDE_PLUGIN_ROOT}/templates/skills_taxonomy.py`.
 - Capture per role: full requirements text, company, role, location, sector/domain.
 
 ## Step 2 — Per role: research, choose base, draft, review
@@ -107,15 +127,30 @@ built `.docx`, computes the True ATS Score, and writes it to the tracker.
   **MIN / AVG / MAX** line. Each row's Score is the True ATS Score written to the
   tracker. Roles whose JD couldn't be retrieved appear with score `—` and a
   reason — never omitted.
-- **Show the skills-demand report.** Run
-  `python3 ${CLAUDE_PLUGIN_ROOT}/templates/skills_demand.py <home>` and present
-  the **"Skills to consider"** list — in-demand skills (across all jobs processed
-  so far) that are NOT employer-backed in the user's profile, most-wanted first.
-  Frame it as "the market keeps asking for these; here's where you might augment
-  your Profile Workbook" — and only ever suggest adding skills they can claim
-  truthfully (confirm where actually used; never fabricate).
+- **Show the skills-demand review.** Run
+  `python3 ${CLAUDE_PLUGIN_ROOT}/templates/skills_demand.py <home>`. It prints the
+  demand inventory by category and writes an Excel **Skills Demand** tab to
+  `<home>/docs/job_descriptions/skills_demand.xlsx` — per skill: frequency, % of
+  jobs, and a **Covered / Weak / Gap** classification against the user's profile,
+  for **leadership / technical_competency / domain** as well as tools. Present the
+  Gaps (and Weak items) most-wanted first: "the market keeps asking for these;
+  here's where you might augment your Profile Workbook." This is **recommend-only**
+  — it never writes the Skills Matrix, bases, or `verified_skills.md`, and you only
+  ever suggest skills the user can claim truthfully.
 - Offer to update the **Profile Workbook** if new facts surfaced, then recompile
   (see setup-profile "Updating later").
+
+## Folder & permission robustness (U1)
+The user may keep manual backups in the working folder and may **decline** a
+delete/move permission. Both are normal, supported conditions — not errors.
+- Treat every delete/move as **best-effort**. If it's declined or fails, **do not
+  abort the run** and do not corrupt state — continue, do the destructive step
+  only where allowed.
+- When promoting the previous batch from `docs/current/` to `docs/submitted/`,
+  move what you can and **report what you couldn't** (name each file and where it
+  was left). Never silently pile up duplicates.
+- Never read or write a leftover/backup file as if it were canonical (pairs with
+  the T1 tracker rule above).
 
 ## Naming
 Built documents land in `<home>/docs/current/` (the latest batch only), named
