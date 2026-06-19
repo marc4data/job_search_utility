@@ -6,6 +6,42 @@ The running version is the single source of truth in
 [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json); each skill announces
 it as its first line at runtime.
 
+## [0.4.0] — 2026-06-19
+
+Field-feedback round from running v0.3.0 on ~40 real roles. No change to the ATS
+scorer's computation or the checklist/ATS boundary; the demand index stays
+demand-only (never writes the Skills Matrix, bases, or verified_skills).
+
+### Added
+- **Continuous build gate (Q1/Q2).** `.github/workflows/ci.yml` runs `build.sh`
+  (required-files + personal-data guards) on every push/PR and uploads the
+  `.plugin` as an artifact; `build` is a required check on `main` (see
+  CONTRIBUTING.md). No tag/Release here — that stays the Release workflow.
+- **Skills-demand index v2 (R1–R5).** Readable corpus filenames
+  (`YYYY-MM-DD_company_jobtitle.md`); a four-category taxonomy
+  (tool / technical_competency / leadership / domain) in one editable reference
+  file (`templates/skills_taxonomy.py`); guaranteed per-role coverage with an
+  explicit `no_extract` marker (no silent drops); synonym folding + a stop-list
+  that strips pipeline self-references like `claude`; and an Excel **Skills
+  Demand** review tab classifying each demanded skill Covered/Weak/Gap by
+  category (recommend-only).
+
+### Fixed
+- **Canonical-tracker scoring (T1).** The scorer resolves the canonical tracker
+  by an explicit filename contract (not "first `.xlsx`"), never writes a
+  user-made backup/`OG`/copy, and **halts and asks** on ambiguous resolution.
+- **Folder/permission robustness (U1).** Delete/move are best-effort and
+  self-reporting; declining a permission or leaving backups never aborts a run or
+  treats a leftover as canonical.
+- **Paste-fallback UX (V1).** Unretrievable JDs are gathered into one paste
+  request with a per-role reason; an unpasted role is deferred with that reason,
+  never scored from a guess.
+
+### Deferred
+- Tagging `v0.4.0` / cutting a GitHub Release depends on the Release workflow
+  (Round 4 / Epic P), which isn't in the repo yet. Version + CHANGELOG are bumped
+  now; the tag/Release follows once P lands.
+
 ## [0.3.0] — 2026-06-18
 
 Makes the profile tunable by the end user, and turns processed jobs into market
