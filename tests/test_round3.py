@@ -85,15 +85,15 @@ def test_skills_demand_records_and_aggregates(tmp_path):
     import skills_demand as sd
     home = str(tmp_path)
     sd.record_jd(home, "j1", "Co A", "Analytics Engineer", "IC",
-                 "dbt SQL Snowflake Airflow Tableau")
+                 "dbt SQL Snowflake Airflow Tableau", date="2026-06-18")
     sd.record_jd(home, "j2", "Co B", "Manager, Analytics", "Manager",
-                 "dbt SQL Snowflake Looker")
-    rows = sd.load_index(home)
-    agg = sd.demand(rows)
-    assert len(agg["snowflake"]["jobs"]) == 2          # in both jobs
-    assert agg["airflow"]["jobs"] == {"j1"}            # only j1
-    # corpus file persisted (visible docs/ folder)
-    assert os.path.exists(os.path.join(home, "docs", "job_descriptions", "j1.md"))
+                 "dbt SQL Snowflake Looker", date="2026-06-18")
+    agg = sd.demand(sd.load_index(home))               # keyed by (category, skill) in v2
+    assert len(agg[("tool", "snowflake")]["jobs"]) == 2
+    assert agg[("tool", "airflow")]["jobs"] == {"j1"}
+    # a readable corpus file was persisted in the visible docs/ folder
+    corpus = os.listdir(os.path.join(home, "docs", "job_descriptions"))
+    assert any(f.startswith("2026-06-18_co-a_") and f.endswith(".md") for f in corpus)
 
 
 def test_skills_demand_index_is_idempotent(tmp_path):

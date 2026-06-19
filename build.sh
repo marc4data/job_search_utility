@@ -52,6 +52,7 @@ REQUIRED=(
   "templates/skills_vocab.py"             # shared tool vocabulary (v0.3.0)
   "templates/validate_profile.py"         # truthfulness validator (v0.3.0)
   "templates/skills_demand.py"            # skills-demand repository (v0.3.0)
+  "templates/skills_taxonomy.py"          # demand taxonomy/synonym reference (v0.4.0)
   "templates/compile_profile.py"          # Profile Workbook compiler (v0.3.0)
   "templates/profile_workbook_template.xlsx"  # the editable profile source (v0.3.0)
 )

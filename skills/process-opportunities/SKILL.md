@@ -68,10 +68,14 @@ See `process_rules.md` §1a for the full retrieval playbook. Use
 5. **Record each retrieved JD into the skills-demand repository.** For every JD
    you successfully retrieve, call
    `skills_demand.record_jd(<home>, job_id, company, role, level, jd_text)`
-   (from `${CLAUDE_PLUGIN_ROOT}/templates/skills_demand.py`). It saves the JD to
-   `<home>/docs/job_descriptions/` and updates the demand index. `level` is
-   IC / Manager / Director / VP, inferred from the title. This is what lets the
-   batch tell the user which in-demand skills they're missing (Step 5).
+   (from `${CLAUDE_PLUGIN_ROOT}/templates/skills_demand.py`). `level` is
+   IC / Manager / Director / VP, inferred from the title. It saves the JD under a
+   readable name (`YYYY-MM-DD_company_jobtitle.md`) and extracts demand into four
+   categories — **tool, technical_competency, leadership, domain** — so senior
+   (Director/VP) demand is captured, not just software. Every processed role
+   produces ≥1 row; a role with nothing extractable gets an explicit `no_extract`
+   marker (never a silent drop). The taxonomy/synonyms are editable in
+   `${CLAUDE_PLUGIN_ROOT}/templates/skills_taxonomy.py`.
 - Capture per role: full requirements text, company, role, location, sector/domain.
 
 ## Step 2 — Per role: research, choose base, draft, review
@@ -114,13 +118,16 @@ built `.docx`, computes the True ATS Score, and writes it to the tracker.
   **MIN / AVG / MAX** line. Each row's Score is the True ATS Score written to the
   tracker. Roles whose JD couldn't be retrieved appear with score `—` and a
   reason — never omitted.
-- **Show the skills-demand report.** Run
-  `python3 ${CLAUDE_PLUGIN_ROOT}/templates/skills_demand.py <home>` and present
-  the **"Skills to consider"** list — in-demand skills (across all jobs processed
-  so far) that are NOT employer-backed in the user's profile, most-wanted first.
-  Frame it as "the market keeps asking for these; here's where you might augment
-  your Profile Workbook" — and only ever suggest adding skills they can claim
-  truthfully (confirm where actually used; never fabricate).
+- **Show the skills-demand review.** Run
+  `python3 ${CLAUDE_PLUGIN_ROOT}/templates/skills_demand.py <home>`. It prints the
+  demand inventory by category and writes an Excel **Skills Demand** tab to
+  `<home>/docs/job_descriptions/skills_demand.xlsx` — per skill: frequency, % of
+  jobs, and a **Covered / Weak / Gap** classification against the user's profile,
+  for **leadership / technical_competency / domain** as well as tools. Present the
+  Gaps (and Weak items) most-wanted first: "the market keeps asking for these;
+  here's where you might augment your Profile Workbook." This is **recommend-only**
+  — it never writes the Skills Matrix, bases, or `verified_skills.md`, and you only
+  ever suggest skills the user can claim truthfully.
 - Offer to update the **Profile Workbook** if new facts surfaced, then recompile
   (see setup-profile "Updating later").
 
