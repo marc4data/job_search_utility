@@ -61,10 +61,19 @@ See `process_rules.md` §1a for the full retrieval playbook. Use
    - `needs-paste` → collect for step 3 (do not skip).
    - Recommend installing Claude in Chrome **only** if a role still fails after
      headless attempts.
-3. **Batch the paste request once.** Ask the user a single time to paste the
-   JDs for every role that couldn't be retrieved — not one prompt per role.
-4. **Never build or score from a guessed JD.** A role with no real JD is
-   deferred with a note and shown in the Step 5 table with score `—`.
+3. **Batch the paste request once, with a reason per role (V1).** Collect ALL
+   roles that couldn't be retrieved and ask the user **one** time to paste them —
+   never one prompt per role, never mid-build. Present them as a short list, each
+   with **why** it failed so the user knows what to grab:
+   - `removed` — posting 404s / "no longer available"
+   - `spa` — page renders client-side and returned an empty shell
+   - `login` — login/paywall shell (e.g. LinkedIn with no parseable jobId)
+   - `blocked` — HTTP 403/429
+   - `missing-file` — a local-file link whose file isn't in the folder
+   - `no-link` — the row has no resolvable link at all
+4. **Never build or score from a guessed JD.** A role the user doesn't paste is
+   **deferred with its reason** and shown in the Step 5 table with score `—` — it
+   is never built or scored from an assumed description.
 5. **Record each retrieved JD into the skills-demand repository.** For every JD
    you successfully retrieve, call
    `skills_demand.record_jd(<home>, job_id, company, role, level, jd_text)`
