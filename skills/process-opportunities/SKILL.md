@@ -34,6 +34,13 @@ Identify the working folder (`<home>` — the job search folder containing
 unclear: the rows already seeded in the tracker for today, or ones the user will
 paste.
 
+**Canonical tracker (T1).** The user may keep backup copies in `tracker/` (e.g.
+`… - OG.xlsx`, `…_copy.xlsx`) — that's normal and supported. The scorer resolves
+the **canonical** tracker by the filename contract `job_search_tracker_<name>.xlsx`
+(backups/copies excluded) and writes the True ATS Score **only** there. If it
+can't resolve exactly one canonical tracker, it **halts and asks** — never writes
+to a guessed file. Never read or write a backup/`OG`/copy as if it were canonical.
+
 ## Step 1 — Get each job description (preflight first)
 See `process_rules.md` §1a for the full retrieval playbook. Use
 `${CLAUDE_PLUGIN_ROOT}/templates/jd_retrieval.py` — do **not** eyeball the cells.

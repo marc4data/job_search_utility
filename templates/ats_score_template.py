@@ -38,13 +38,52 @@ def _find_home(start):
     raise SystemExit("Could not locate the job-search working folder "
                      "(no .system/ ancestor of this script).")
 
-def _find_tracker(home):
+# T1 — resolve the CANONICAL tracker by an explicit filename contract, never by
+# positional "first .xlsx". User-made backups (e.g. "… - OG.xlsx") legitimately
+# coexist in the folder and must never be written to. The canonical file is
+# job_search_tracker_<slug>.xlsx where <slug> is lowercase letters/digits/
+# underscore only — so a backup's spaces/uppercase/markers exclude it.
+_CANON_RE = re.compile(r"^job_search_tracker_[a-z0-9_]+\.xlsx$")
+_BACKUP_TOKENS = ("og", "backup", "bak", "copy", "old", "archive", "orig", "draft")
+
+
+def _is_backup_name(name):
+    stem = name[:-5].lower() if name.lower().endswith(".xlsx") else name.lower()
+    # any backup marker as a delimited token (e.g. "_og", "_copy", " - og", "(1)")
+    parts = re.split(r"[_\-\s().]+", stem)
+    return any(p in _BACKUP_TOKENS for p in parts) or "(" in name
+
+
+def _tracker_candidates(home):
     tdir = os.path.join(home, "tracker")
-    files = sorted(f for f in os.listdir(tdir)
-                   if f.endswith(".xlsx") and not f.startswith("~$")) if os.path.isdir(tdir) else []
-    if not files:
-        raise SystemExit("No tracker .xlsx found in <home>/tracker/. Run setup-profile first.")
-    return os.path.join(tdir, files[0])
+    if not os.path.isdir(tdir):
+        return []
+    return sorted(
+        f for f in os.listdir(tdir)
+        if f.lower().endswith(".xlsx") and not f.startswith("~$")
+        and _CANON_RE.match(f) and not _is_backup_name(f)
+    )
+
+
+def _find_tracker(home):
+    """Return the single canonical tracker, or halt+ask if 0 or >1 candidates."""
+    tdir = os.path.join(home, "tracker")
+    cands = _tracker_candidates(home)
+    if len(cands) == 1:
+        return os.path.join(tdir, cands[0])
+    listing = ", ".join(sorted(f for f in os.listdir(tdir))) if os.path.isdir(tdir) else "(no tracker/ dir)"
+    if not cands:
+        raise SystemExit(
+            "Could not resolve a canonical tracker in <home>/tracker/.\n"
+            f"  Looked for: job_search_tracker_<name>.xlsx  (backups/copies excluded)\n"
+            f"  Found:      {listing}\n"
+            "Run setup-profile, or rename the real tracker to the canonical form. "
+            "I won't guess — a score must never land in a backup file.")
+    raise SystemExit(
+        "AMBIGUOUS tracker: more than one canonical-looking file exists — refusing to guess.\n"
+        f"  Candidates: {', '.join(cands)}\n"
+        "Keep exactly one canonical job_search_tracker_<name>.xlsx (move/rename the others, "
+        "e.g. add ' - OG'); then re-run. The True ATS Score must go to one canonical tracker only.")
 
 # Resolved at import when run as a real script (this file sits inside a workspace).
 # Tolerant of import from outside a workspace (e.g. unit tests) — main() re-resolves
