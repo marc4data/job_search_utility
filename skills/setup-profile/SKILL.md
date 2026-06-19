@@ -112,9 +112,12 @@ Skills Matrix — that's what keeps applications truthful.
 Write a tiny throwaway script in `<home>/.system/scripts/` that sets
 `JS_PROFILE=<home>/profile/profile.py`, execs `<home>/.system/engine/build_docs.py`,
 and calls `build_resume(...)` once with the LEADER base to write a sample résumé
-into `<home>/docs/current/`. Open it, confirm the name/contact/education render
-correctly, then delete the sample. If it errors, fix the profile files before
-finishing.
+**into a scratch dir (`<home>/.system/scripts/`), not `docs/current/`** — so no
+self-test artifact lands in the user's batch folder. Open it, confirm the
+name/contact/education render correctly, then remove it. Removal is **best-effort
+(U1)**: if the delete permission is declined, leave the sample where it is and
+tell the user it's a harmless self-test file they can delete. If the build errors,
+fix the profile files before finishing.
 
 ## Step 5 — Hand off
 

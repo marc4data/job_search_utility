@@ -124,6 +124,18 @@ built `.docx`, computes the True ATS Score, and writes it to the tracker.
 - Offer to update the **Profile Workbook** if new facts surfaced, then recompile
   (see setup-profile "Updating later").
 
+## Folder & permission robustness (U1)
+The user may keep manual backups in the working folder and may **decline** a
+delete/move permission. Both are normal, supported conditions — not errors.
+- Treat every delete/move as **best-effort**. If it's declined or fails, **do not
+  abort the run** and do not corrupt state — continue, do the destructive step
+  only where allowed.
+- When promoting the previous batch from `docs/current/` to `docs/submitted/`,
+  move what you can and **report what you couldn't** (name each file and where it
+  was left). Never silently pile up duplicates.
+- Never read or write a leftover/backup file as if it were canonical (pairs with
+  the T1 tracker rule above).
+
 ## Naming
 Built documents land in `<home>/docs/current/` (the latest batch only), named
 `001_<Name> - <Company> - <Role Stub> - Resume.docx` and `- Cover Letter.docx`.
