@@ -1,0 +1,37 @@
+name: CI — build & integrity gate
+
+# Q1: build the .plugin and run build.sh's integrity guards (required-files +
+# personal-data check) on EVERY push and PR — the always-on smoke alarm.
+# This does NOT tag or cut a Release; that stays the Release workflow's job (P).
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history — build.sh uses git archive / git ls-files)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build the .plugin and run integrity guards
+        # build.sh runs `set -euo pipefail`; required-files + personal-data guards
+        # fail the step (red X) if a file is missing or real personal data is tracked.
+        run: ./build.sh
+
+      - name: Upload .plugin build artifact (no Release)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: job-search-tailor-plugin
+          path: job-search-tailor.plugin
+          if-no-files-found: error
