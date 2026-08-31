@@ -35,3 +35,44 @@ Or in the UI: **Settings → Branches → Add branch protection rule** for `main
 
 Once set, a PR whose CI build fails cannot be merged, and direct pushes to `main`
 that fail the build are rejected.
+
+## Release workflow (Epic P)
+
+Cutting a Release is a **tag** action, not a push action.
+[`.github/workflows/release.yml`](.github/workflows/release.yml) fires on a
+`vX.Y.Z` tag and does three things in order:
+
+1. **Verifies the tag matches `plugin.json`.** A `v0.5.0` tag on a commit whose
+   `plugin.json` says `0.4.0` fails the release — that mismatch would ship a
+   package announcing a different version than the Release it lives under, which
+   is exactly the drift K1 exists to prevent.
+2. **Runs `./build.sh`** — the same required-files and personal-data guards CI
+   runs, so a Release can never ship a package CI would have rejected.
+3. **Publishes the Release** with the `.plugin` attached and the CHANGELOG's
+   section for that version as its notes (via `tools/release_notes.py`). Release
+   notes are never hand-written, so they cannot drift from the CHANGELOG.
+
+### Cutting a release
+
+```bash
+# 1. main must already carry the version bump + CHANGELOG entry (see the
+#    "[v0.5.0] Bump version" commit convention).
+git checkout main && git pull
+
+# 2. Confirm what will be published before tagging.
+python3 tools/release_notes.py "$(python3 -c "import json;print(json.load(open('.claude-plugin/plugin.json'))['version'])")"
+
+# 3. Tag and push — the workflow does the rest.
+git tag -a v0.5.0 -m "job-search-tailor v0.5.0"
+git push origin v0.5.0
+```
+
+Watch it with `gh run list --workflow=release.yml`; the result appears in
+`gh release list`.
+
+### Retroactive tags
+
+`v0.4.0` predates this workflow. A tag on a commit that has no `release.yml`
+triggers nothing, so its Release was created directly with
+`gh release create --notes-file` from the same `tools/release_notes.py` output —
+same notes, same source of truth, just no automated build attached.

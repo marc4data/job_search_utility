@@ -1,0 +1,61 @@
+name: Release — build & publish the .plugin
+
+# P1: cutting a Release is a TAG action, not a push action. Pushing a `vX.Y.Z`
+# tag builds the plugin, verifies the tag agrees with the version the plugin
+# announces at runtime, and publishes a GitHub Release with the .plugin attached
+# and the CHANGELOG section as its notes.
+#
+# ci.yml is the always-on smoke alarm on every push/PR; this is the deliberate,
+# tag-triggered release. The integrity guards are the same ones (build.sh), so a
+# Release can never ship a package CI would have rejected.
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+permissions:
+  contents: write        # required to create the Release and upload its asset
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history — build.sh uses git archive / git ls-files)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify the tag matches plugin.json, and collect release notes
+        # A tag that disagrees with plugin.json would publish a package that
+        # announces a different version than the Release it ships under — the
+        # exact drift K1 exists to prevent. Fail loudly instead.
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PLUGIN_VERSION=$(python3 -c "import json;print(json.load(open('.claude-plugin/plugin.json'))['version'])")
+          if [ "$TAG_VERSION" != "$PLUGIN_VERSION" ]; then
+            echo "ERROR: tag ${GITHUB_REF_NAME} does not match plugin.json version ${PLUGIN_VERSION}." >&2
+            echo "Bump plugin.json (and CHANGELOG) or retag — never publish a mismatch." >&2
+            exit 1
+          fi
+          # Fails the release if the version has no CHANGELOG entry.
+          python3 tools/release_notes.py "$PLUGIN_VERSION" > RELEASE_NOTES.md
+          echo "VERSION=$PLUGIN_VERSION" >> "$GITHUB_ENV"
+
+      - name: Build the .plugin and run integrity guards
+        # Same required-files + personal-data guards as CI; build.sh runs
+        # `set -euo pipefail`, so either guard fails this step.
+        run: ./build.sh
+
+      - name: Publish the GitHub Release with the .plugin attached
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            job-search-tailor.plugin \
+            --title "job-search-tailor v${VERSION}" \
+            --notes-file RELEASE_NOTES.md
