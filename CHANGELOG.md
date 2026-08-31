@@ -6,6 +6,56 @@ The running version is the single source of truth in
 [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json); each skill announces
 it as its first line at runtime.
 
+## [0.5.0] — 2026-08-31
+
+Round shaped by running v0.4.0 in daily use. Two friction points (postings that
+can't be fetched, permission prompts mid-retrieval) and one craft correction (the
+cover letter was too presumptive). No change to the ATS scorer's computation or
+the checklist/ATS boundary.
+
+### Added
+- **Manual job-description fallback (W1).** When a posting can't be read — taken
+  down, login-walled, client-rendered, or blocked — the run reads it from
+  `<home>/docs/manual_job_descriptions/` instead of asking for a paste. Files
+  follow `YYYYMMDD Company - Job Title.docx` and are matched on **company + job
+  title** (the date only breaks ties); `.docx` / `.md` / `.txt` are read.
+  `templates/manual_jd.py` does the matching and reading; `jd_retrieval.py` gains
+  `read_job_rows()` / `plan_for_role()`, which attach the matched document to
+  every row — even one with a good link — so a failed fetch falls back instantly.
+  A matched file whose format can't be read (e.g. `.pdf`) is **reported by name
+  with its reason**, never guessed past.
+- **Manual-JD archiving (W3).** Files a run consumed move to
+  `docs/manual_job_descriptions/archive/`, and leftovers a *previous* run
+  consumed are swept at the start of the next one — matched against the
+  skills-demand index, so a description just dropped in for today is never
+  archived. Best-effort per U1: a declined move never aborts a run, and anything
+  left behind is named.
+
+### Changed
+- **Retrieval is prompt-free (W2).** A run no longer asks permission to fetch a
+  URL, whether to try the browser, or about Chrome mid-batch; it works the whole
+  preflight silently and reports once. `setup-profile` now writes
+  `<home>/.claude/settings.json` (from
+  `templates/workspace_settings_template.json`) pre-approving `WebFetch` /
+  `WebSearch` **inside the job-search folder only**, merging into any existing
+  settings rather than overwriting them.
+- **Cover-letter strategy (W4) — less presumptive.** The letter no longer
+  diagnoses the company's problems or asserts what the candidate would do in the
+  role. New three moves: **Para 1** one specific, verifiable thing about the
+  company or its mission and why it genuinely interests you; **Para 2** the
+  résumé items this JD actually asks for, each tied to the requirement it
+  answers; **Para 3** the close — strongest alignment, honest gap with its
+  counterweight, interest in the conversation. A new **presumption rule** bans
+  plans, priorities, first-90-days, and "I would…" aimed at their business, and
+  the Recruiter Review checklist gains a **presumption audit** plus a **match
+  traceability** check. Order of operations updated: the résumé summary is now
+  written before CL Para 1.
+
+### Notes
+- Engine and scoring math unchanged. Both invariants hold: the tracker's *Resume
+  Score* is only ever the True ATS Score, and nothing is claimed that isn't in
+  `verified_skills.md`.
+
 ## [0.4.0] — 2026-06-19
 
 Field-feedback round from running v0.3.0 on ~40 real roles. No change to the ATS

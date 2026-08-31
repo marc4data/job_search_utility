@@ -1,10 +1,19 @@
 # Job Search Tailor
 
-**Version 0.4.0** · see [CHANGELOG.md](CHANGELOG.md) for full history.
+**Version 0.5.0** · see [CHANGELOG.md](CHANGELOG.md) for full history.
 
 A Cowork plugin that turns a job posting into a tailored résumé + cover letter
 and scores how well your résumé actually matches the role — with a **realistic
 ATS score, not an inflated 100**.
+
+**What's new in 0.5.0:** when a posting can't be read from the web, drop the
+description into **`docs/manual_job_descriptions/`** as
+`YYYYMMDD Company - Job Title.docx` and the run finds it by company and job title
+— no pasting, and used files self-archive; **retrieval never stops to ask**
+(setup pre-approves web fetches inside your job-search folder only); and the
+**cover letter is less presumptive** — it highlights the résumé experience this
+job actually asks for and says what genuinely interests you about the company,
+instead of diagnosing their business or asserting what you'd do there.
 
 **What's new in 0.4.0:** the skills-demand index now captures **leadership,
 methods, and domain** — not just tools — with readable JD filenames, synonym
@@ -68,7 +77,7 @@ PER-JOB LOOP — say "process job opportunities"
    1. Paste job link into job_tracker.xlsx
    2. Research the company's specific situation
    3. Pick base:   LEADER  ◄──►  HANDSON
-   4. Draft in order:  CL Para 1 → résumé summary → CL Para 2 & 3
+   4. Draft in order:  résumé summary → CL Para 1 (interest) → 2 (match) → 3 (close)
          └─ every claim must trace to verified_skills.md   (TRUTHFULNESS)
    5. Recruiter Review checklist (10 points)
    6. build_batch_<date>.py  →  engine/build_docs.py
@@ -114,7 +123,10 @@ Your working folder (created during setup) mirrors this: `engine/`, `profile/`,
 
 ## Notes
 
-- Job descriptions are read with the browser (works with LinkedIn, Indeed, etc.),
-  or you can paste them in. No special connector required.
+- Job descriptions are fetched headlessly first (LinkedIn's guest endpoint,
+  plain fetch), with the browser as a fallback — no special connector required,
+  and no permission prompts mid-run. If a posting can't be read at all, save it
+  into `docs/manual_job_descriptions/` as `YYYYMMDD Company - Job Title.docx`
+  (Word, Markdown, or plain text) and the next run picks it up.
 - Document generation uses `python-docx` and `openpyxl` (installed on demand).
 - It's deliberately opinionated about résumé/cover-letter craft — that's the point.
