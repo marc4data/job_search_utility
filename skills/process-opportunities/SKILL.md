@@ -41,16 +41,29 @@ the **canonical** tracker by the filename contract `job_search_tracker_<name>.xl
 can't resolve exactly one canonical tracker, it **halts and asks** — never writes
 to a guessed file. Never read or write a backup/`OG`/copy as if it were canonical.
 
-## Step 1 — Get each job description (preflight first)
+## Step 1 — Get each job description (preflight first, no prompts)
 See `process_rules.md` §1a for the full retrieval playbook. Use
-`${CLAUDE_PLUGIN_ROOT}/templates/jd_retrieval.py` — do **not** eyeball the cells.
+`${CLAUDE_PLUGIN_ROOT}/templates/jd_retrieval.py` and
+`${CLAUDE_PLUGIN_ROOT}/templates/manual_jd.py` — do **not** eyeball the cells.
 
-1. **Resolve + classify every selected role's link up front.** Run a short
-   python that opens the tracker and calls `jd_retrieval.read_job_links(ws)`.
+0. **Never prompt during retrieval (W2).** Do not ask permission to fetch a URL,
+   do not ask whether to try the browser, do not raise Chrome mid-run, do not
+   narrate each attempt. Run the whole preflight silently and report once.
+   Before fetching, ensure `<home>/.claude/settings.json` exists with the web
+   allow-rules; if it doesn't, write it from
+   `${CLAUDE_PLUGIN_ROOT}/templates/workspace_settings_template.json` (merging
+   into any existing file rather than overwriting it) and note it in one line —
+   a permission file added mid-session may only take effect next session.
+1. **Resolve + classify every selected role up front.** Run a short python that
+   opens the tracker and calls `jd_retrieval.read_job_rows(ws, home=<home>)`.
    That reads the **embedded hyperlink target** of the *Sourced From (w/link)*
-   cell (not the display text like "Linkedin"/"DM Message"), finds the link
-   column by header, and returns `(row, target, plan)` per role where `plan` is
-   `linkedin-guest` / `web-fetch` / `local-file` / `needs-paste`.
+   cell (not the display text like "Linkedin"/"DM Message"), finds the link,
+   company, and role columns by header, and returns one dict per role:
+   `{row, company, role, target, plan, manual}`. `plan` is `linkedin-guest` /
+   `web-fetch` / `local-file` / `manual-file` / `needs-paste`, and `manual` is
+   the matching document already waiting in
+   `<home>/docs/manual_job_descriptions/` (present even when the row has a good
+   link — it's the fallback for when the fetch fails).
 2. **Fetch by plan, headless first:**
    - `linkedin-guest` → fetch the guest endpoint
      (`jd_retrieval.linkedin_guest_url(job_id)`) **before** any browser/login
@@ -58,23 +71,33 @@ See `process_rules.md` §1a for the full retrieval playbook. Use
    - `web-fetch` → try a headless fetch; if it returns an empty/login shell,
      fall back to the browser.
    - `local-file` → read the file's text.
-   - `needs-paste` → collect for step 3 (do not skip).
-   - Recommend installing Claude in Chrome **only** if a role still fails after
-     headless attempts.
-3. **Batch the paste request once, with a reason per role (V1).** Collect ALL
-   roles that couldn't be retrieved and ask the user **one** time to paste them —
-   never one prompt per role, never mid-build. Present them as a short list, each
-   with **why** it failed so the user knows what to grab:
+   - `manual-file` → read the matched manual document.
+   - `needs-paste` → collect for step 4 (do not skip).
+3. **On any fetch failure, use the manual-JD folder before asking (W1).** Call
+   `manual_jd.manual_fallback(<home>, company, role)`. If it returns `text`, use
+   it and move on — no question asked. Files are named
+   `YYYYMMDD Company - Job Title.docx` and matched on **company + job title**
+   (the date only breaks ties); `.docx`/`.md`/`.txt` are readable. A match with
+   `text=None` (e.g. a `.pdf`) is **reported by filename with its reason**, never
+   guessed past — that role goes to step 4.
+4. **Batch the paste request once, with a reason per role (V1).** Collect ALL
+   roles still without a JD and ask the user **one** time to paste them — never
+   one prompt per role, never mid-build. Present them as a short list, each with
+   **why** it failed so the user knows what to grab:
    - `removed` — posting 404s / "no longer available"
    - `spa` — page renders client-side and returned an empty shell
    - `login` — login/paywall shell (e.g. LinkedIn with no parseable jobId)
    - `blocked` — HTTP 403/429
    - `missing-file` — a local-file link whose file isn't in the folder
    - `no-link` — the row has no resolvable link at all
-4. **Never build or score from a guessed JD.** A role the user doesn't paste is
+   - `unreadable-manual` — a manual file matched but its format can't be read
+   Tell them they can also drop the description into
+   `docs/manual_job_descriptions/` as `YYYYMMDD Company - Job Title.docx`
+   instead of pasting.
+5. **Never build or score from a guessed JD.** A role the user doesn't supply is
    **deferred with its reason** and shown in the Step 5 table with score `—` — it
    is never built or scored from an assumed description.
-5. **Record each retrieved JD into the skills-demand repository.** For every JD
+6. **Record each retrieved JD into the skills-demand repository.** For every JD
    you successfully retrieve, call
    `skills_demand.record_jd(<home>, job_id, company, role, level, jd_text)`
    (from `${CLAUDE_PLUGIN_ROOT}/templates/skills_demand.py`). `level` is
@@ -92,10 +115,17 @@ For each job, follow the mandatory order from `process_rules.md`:
 1. Research the company's *specific* situation.
 2. Pick the base: **LEADER** (people-manager) or **HANDSON** (hands-on/IC). If
    the title says Manager/Director but the work is hands-on, use HANDSON.
-3. Write cover-letter **Para 1** (company insight) first, then the résumé
-   summary (no overlap), then CL Para 2 (one story), then CL Para 3 (forward
-   judgment / honest gap + counterweight).
-4. Run the **Recruiter Review checklist** (section 5 of process_rules.md) and
+3. Write the résumé summary, then the three cover-letter paragraphs in order
+   (`process_rules.md` §4): **Para 1** one specific, verifiable thing about the
+   company or its mission and why it interests you; **Para 2** the résumé items
+   this JD actually asks for, each tied to the requirement it answers; **Para 3**
+   the close — strongest alignment restated, honest gap + counterweight if there
+   is one, and interest in a conversation.
+4. **The presumption rule.** Never assert what you would do at the company: no
+   diagnosis of their problems or "opportunities", no plan, priorities, or
+   first-90-days, no "I would…"/"you should…" aimed at their business. Say what
+   you have done and what interests you; let them draw the conclusion.
+5. Run the **Recruiter Review checklist** (section 5 of process_rules.md) and
    fix anything that fails before building.
 Cross-check every claim against `verified_skills.md` as you write.
 
@@ -137,6 +167,15 @@ built `.docx`, computes the True ATS Score, and writes it to the tracker.
   here's where you might augment your Profile Workbook." This is **recommend-only**
   — it never writes the Skills Matrix, bases, or `verified_skills.md`, and you only
   ever suggest skills the user can claim truthfully.
+- **Archive the manual JDs this run used (W3).** Call
+  `manual_jd.archive_manual_jds(<home>, paths)` on every file in
+  `docs/manual_job_descriptions/` that a role was built from — it moves them into
+  that folder's `archive/` subfolder so only descriptions still waiting to be
+  used remain visible. Also archive leftovers a previous run already consumed,
+  found with `manual_jd.stale_manual_jds(<home>, active_paths, skills_demand.load_index(<home>))`;
+  a file the user just dropped in has no index row yet and is never swept up.
+  Best-effort per U1: a declined move never aborts the run, and anything left
+  behind is named.
 - Offer to update the **Profile Workbook** if new facts surfaced, then recompile
   (see setup-profile "Updating later").
 
@@ -147,8 +186,9 @@ delete/move permission. Both are normal, supported conditions — not errors.
   abort the run** and do not corrupt state — continue, do the destructive step
   only where allowed.
 - When promoting the previous batch from `docs/current/` to `docs/submitted/`,
-  move what you can and **report what you couldn't** (name each file and where it
-  was left). Never silently pile up duplicates.
+  or used manual JDs into `docs/manual_job_descriptions/archive/`, move what you
+  can and **report what you couldn't** (name each file and where it was left).
+  Never silently pile up duplicates.
 - Never read or write a leftover/backup file as if it were canonical (pairs with
   the T1 tracker rule above).
 
