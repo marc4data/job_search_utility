@@ -54,6 +54,9 @@ REQUIRED=(
   "templates/skills_demand.py"            # skills-demand repository (v0.3.0)
   "templates/skills_taxonomy.py"          # demand taxonomy/synonym reference (v0.4.0)
   "templates/compile_profile.py"          # Profile Workbook compiler (v0.3.0)
+  "templates/manual_jd.py"                # manual-JD fallback + archive (v0.5.0)
+  "templates/manual_jd_README_template.md"      # naming guide for the drop folder (v0.5.0)
+  "templates/workspace_settings_template.json"  # pre-approved web fetches (v0.5.0)
   "templates/profile_workbook_template.xlsx"  # the editable profile source (v0.3.0)
 )
 for f in "${REQUIRED[@]}"; do

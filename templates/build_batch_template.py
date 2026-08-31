@@ -74,6 +74,10 @@ def do_role(base, company, role, location, stub, target_title,
 #   HANDSON = IC / player-coach / hands-on technical role
 # Write the summary + cover letter AFTER reading the JD and verified_skills.md.
 # jd_hard = 5-10 genuine discriminators for the 3-pass QA (not the tracker score).
+#
+# COVER LETTER (references/process_rules.md §4): match + genuine interest. Never
+# assert what you'd DO at the company — no diagnosis of their problems or
+# "opportunities", no plan, no first-90-days, no "I would…" about their business.
 # ════════════════════════════════════════════════════════════════════════════
 do_role(
     base="LEADER",
@@ -93,10 +97,15 @@ do_role(
              ("kpi", 2), ("executive", 2), ("team leadership", 2)],
     gap_patches={}, tight_patches={},
     cover=[
-        "Para 1 — the COMPANY's specific situation. You don't appear here.",
-        "Para 2 — ONE vivid story that maps to the problem in Para 1.",
-        "Para 3 — forward-looking judgment: what you'd prioritize, or an honest gap "
-        "acknowledged with a counterweight.",
+        "Para 1 — ONE specific, verifiable thing about the company or its mission "
+        "(what it builds, who it serves, a real development) and why that draws you "
+        "to this role. Researched and factual; never a generic compliment.",
+        "Para 2 — THE MATCH: the résumé items this JD actually asks for, each tied "
+        "to the requirement it answers, with company, scale, and outcome. Two or "
+        "three strongest alignments, conversational. All backed by verified_skills.",
+        "Para 3 — THE CLOSE: strongest alignment restated, any genuine gap "
+        "acknowledged with its counterweight, and interest in the conversation. "
+        "No plan, no priorities, no advice about their business.",
     ],
 )
 

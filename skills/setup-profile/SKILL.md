@@ -31,24 +31,39 @@ the technical guts (safe to ignore).
 ├── tracker/             ← job_search_tracker_<name>.xlsx
 ├── docs/
 │   ├── current/         ← the latest batch ONLY (built résumés + cover letters)
-│   └── submitted/       ← flat archive of all prior batches
+│   ├── submitted/       ← flat archive of all prior batches
+│   └── manual_job_descriptions/   ← JDs the user saves when a posting can't be fetched
+│       └── archive/     ← manual JDs already used by a run
 ├── profile/
 │   ├── Profile_Workbook_<name>.xlsx   ← the user EDITS this (source of truth)
 │   ├── profile.py, bases.py, verified_skills.md   ← COMPILED from the workbook
 │   └── history/         ← dated snapshots (used later)
+├── .claude/
+│   └── settings.json    ← pre-approves web fetches so runs never stop to ask
 └── .system/
     ├── engine/build_docs.py   ← copy from ${CLAUDE_PLUGIN_ROOT}/engine/
     └── scripts/               ← per-run build/ats scripts go here, under <date>/
 ```
 
 Create every folder above (leave `docs/current/`, `docs/submitted/`,
-`profile/history/` empty for now). Copy
+`docs/manual_job_descriptions/archive/`, `profile/history/` empty for now). Copy
 `${CLAUDE_PLUGIN_ROOT}/engine/build_docs.py` to `<home>/.system/engine/`. Copy the
 tracker template `${CLAUDE_PLUGIN_ROOT}/templates/job_tracker_template.xlsx` to
 `<home>/tracker/job_search_tracker_<name>.xlsx`, and the Profile Workbook template
 `${CLAUDE_PLUGIN_ROOT}/templates/profile_workbook_template.xlsx` to
 `<home>/profile/Profile_Workbook_<name>.xlsx` (slugify the user's name). Keep the
 `templates/*.py` handy — each run copies them into `<home>/.system/scripts/<date>/`.
+
+Copy `${CLAUDE_PLUGIN_ROOT}/templates/manual_jd_README_template.md` to
+`<home>/docs/manual_job_descriptions/README.md` — it's the naming guide the user
+reads when a posting can't be fetched (`YYYYMMDD Company - Job Title.docx`).
+
+Copy `${CLAUDE_PLUGIN_ROOT}/templates/workspace_settings_template.json` to
+`<home>/.claude/settings.json` (**merge** its `permissions.allow` entries into any
+settings file already there — never overwrite the user's own settings). This
+pre-approves `WebFetch`/`WebSearch` inside this folder so a processing run never
+stops to ask permission for the job links it was told to read. Mention it in one
+line at hand-off; the user can delete an entry to be asked again.
 
 Finally, write a plain-language `<home>/README.md` from
 `${CLAUDE_PLUGIN_ROOT}/templates/workspace_README_template.md`, filling in the
@@ -124,6 +139,12 @@ fix the profile files before finishing.
 Tell the user setup is done and what they got: their **Profile Workbook** (the one
 file they edit), two base résumés, and a tracker. Explain the daily loop: paste
 job links into the tracker, then ask to "process job opportunities."
+
+Also point out the **manual job descriptions** folder: when a posting can't be
+read from the web (taken down, behind a login, blocked), save the description
+into `docs/manual_job_descriptions/` as `YYYYMMDD Company - Job Title.docx` and
+the next run picks it up automatically — no pasting. Used files move to its
+`archive/` subfolder.
 
 Explain how to **tune over time**: edit the Profile Workbook, then say "update my
 profile" — you'll recompile `profile.py`/`bases.py`/`verified_skills.md` and re-run
