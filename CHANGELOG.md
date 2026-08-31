@@ -6,6 +6,16 @@ The running version is the single source of truth in
 [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json); each skill announces
 it as its first line at runtime.
 
+## Unreleased — tooling
+
+- **Release workflow (Epic P).** `.github/workflows/release.yml` fires on a
+  `vX.Y.Z` tag: it verifies the tag matches `plugin.json`, runs `build.sh`'s
+  integrity guards, and publishes a GitHub Release with the `.plugin` attached
+  and this file's section for that version as the notes (via
+  `tools/release_notes.py`) — so a Release can never drift from the CHANGELOG.
+  Documented in CONTRIBUTING.md. **No plugin behavior change**, so no version
+  bump; `v0.4.0` and `v0.5.0` were tagged once P landed.
+
 ## [0.5.0] — 2026-08-31
 
 Round shaped by running v0.4.0 in daily use. Two friction points (postings that
@@ -87,10 +97,11 @@ demand-only (never writes the Skills Matrix, bases, or verified_skills).
   request with a per-role reason; an unpasted role is deferred with that reason,
   never scored from a guess.
 
-### Deferred
-- Tagging `v0.4.0` / cutting a GitHub Release depends on the Release workflow
-  (Round 4 / Epic P), which isn't in the repo yet. Version + CHANGELOG are bumped
-  now; the tag/Release follows once P lands.
+### Deferred → resolved
+- Tagging `v0.4.0` / cutting a GitHub Release depended on the Release workflow
+  (Epic P), which wasn't in the repo at the time. **P has since landed**
+  (`.github/workflows/release.yml`), and `v0.4.0` was tagged retroactively at
+  this round's merge commit.
 
 ## [0.3.0] — 2026-06-18
 
